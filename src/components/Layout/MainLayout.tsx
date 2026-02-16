@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { LayoutDashboard, CheckSquare, BarChart2, Settings, LogOut, Calendar, X, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { View } from '../../types';
@@ -13,6 +13,18 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Track scroll for navbar transparency
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 20;
+      setScrolled(isScrolled);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const mainNav = [
     { id: 'dashboard' as View, label: 'Command Center', icon: LayoutDashboard },
@@ -30,7 +42,7 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
   return (
     <div className="app-shell">
       {/* ─── Top Navbar ─── */}
-      <nav className="top-navbar">
+      <nav className={`top-navbar ${scrolled ? 'scrolled' : ''}`}>
         <div className="navbar-left">
           <button 
             className={`hamburger-btn ${sidebarOpen ? 'active' : ''}`}
