@@ -112,7 +112,7 @@ export const CalendarPage = () => {
       </div>
 
       {/* Stats Row */}
-      <div className="stat-grid mb-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stat-grid mb-2">
         <div className="stat-card">
           <div className="stat-value">{currentStreak}</div>
           <div className="stat-label">Day Streak</div>

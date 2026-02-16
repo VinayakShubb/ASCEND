@@ -963,7 +963,7 @@ body {
    ═══════════════════════════════════════════ */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem;
 }
 
@@ -1143,6 +1143,12 @@ body {
 /* ═══════════════════════════════════════════
    FORMS
    ═══════════════════════════════════════════ */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
 
 .form-label {
@@ -1273,6 +1279,8 @@ body {
 .heatmap-scroll {
   overflow-x: auto;
   padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .heatmap-month-row {
@@ -1574,7 +1582,12 @@ body {
 
 @media (max-width: 640px) {
   .stat-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
   
   .calendar-layout {

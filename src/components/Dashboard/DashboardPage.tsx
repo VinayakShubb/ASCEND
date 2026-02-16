@@ -173,7 +173,7 @@ const AddHabitModal = ({ onClose, onAdd }: AddHabitModalProps) => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Category</label>
               <select className="form-select" value={category} onChange={e => setCategory(e.target.value)}>

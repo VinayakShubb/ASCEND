@@ -100,7 +100,7 @@ export const AnalyticsPage = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="stat-grid mb-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stat-grid mb-2">
         <div className="stat-card">
           <Target size={18} className="stat-icon" />
           <div className="stat-value">{disciplineIndex}</div>
@@ -195,7 +195,7 @@ export const AnalyticsPage = () => {
               </div>
 
               {/* Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div className="stat-grid mb-1">
                 <div style={{ background: 'var(--bg-primary)', padding: '0.5rem', borderRadius: 4, textAlign: 'center' }}>
                   <div className="mono" style={{ fontSize: '1rem', fontWeight: 600 }}>{habit.weekConsistency}%</div>
                   <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>7d Consistency</div>
