@@ -161,9 +161,9 @@ body {
 }
 
 .top-navbar.scrolled {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   padding: 0 1.5rem;
   box-shadow: 0 4px 30px rgba(0,0,0,0.2);
@@ -511,11 +511,10 @@ body {
 /* ═══════════════════════════════════════════
    LANDING PAGE
    ═══════════════════════════════════════════ */
+/* Landing Page - let main-content handle scroll */
 .landing-page {
-  height: calc(100vh - var(--header-height));
-  overflow-y: auto;
-  scroll-behavior: smooth;
   position: relative;
+  min-height: 100%;
 }
 
 .landing-hero {
@@ -1207,6 +1206,8 @@ body {
   padding: 2rem;
   width: 100%;
   max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

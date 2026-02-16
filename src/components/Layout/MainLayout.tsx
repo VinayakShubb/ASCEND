@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { LayoutDashboard, CheckSquare, BarChart2, Settings, LogOut, Calendar, X, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { View } from '../../types';
@@ -14,16 +14,20 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Track scroll for navbar transparency
   useEffect(() => {
+    const el = mainContentRef.current;
+    if (!el) return;
+
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 20;
+      const isScrolled = el.scrollTop > 20;
       setScrolled(isScrolled);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    el.addEventListener('scroll', handleScroll);
+    return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
   const mainNav = [
@@ -115,7 +119,7 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
       <AnalyticsPanelOverlay open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
 
       {/* ─── Main Content ─── */}
-      <main className="main-content">
+      <main className="main-content" ref={mainContentRef}>
         {children}
       </main>
     </div>
