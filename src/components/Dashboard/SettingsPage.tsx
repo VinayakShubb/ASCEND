@@ -1,7 +1,8 @@
+import { useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Palette, Shield, Database, Trash2, Download } from 'lucide-react';
+import { Palette, Shield, Database, Trash2, Download, Upload } from 'lucide-react';
 import { storage } from '../../utils/storage';
 
 export const SettingsPage = () => {
@@ -17,21 +18,55 @@ export const SettingsPage = () => {
     { id: 'matrix', label: 'Matrix', desc: 'Terminal green', color: '#00FF66', bg: '#000000' },
   ] as const;
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleExport = () => {
+    if (!user) return;
+    const prefix = user.username;
+    
     const data = {
-      habits: storage.get('habits', []),
-      logs: storage.get('logs', []),
-      user: storage.get('user', null),
-      theme: storage.get('theme', 'obsidian'),
+      habits: storage.get(`${prefix}_habits`, []),
+      logs: storage.get(`${prefix}_logs`, []),
+      user: user,
+      theme: theme,
       exported_at: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ascend-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `ascend-backup-${user.username}-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        const prefix = user.username;
+        
+        // Restore to current user's storage
+        if (json.habits) storage.set(`${prefix}_habits`, json.habits);
+        if (json.logs) storage.set(`${prefix}_logs`, json.logs);
+        if (json.theme) setTheme(json.theme);
+        
+        alert('System restored successfully. Rebooting...');
+        window.location.reload();
+      } catch (err) {
+        alert('CRITICAL ERROR: Corrupt backup file.');
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleClearData = () => {
@@ -116,8 +151,18 @@ export const SettingsPage = () => {
           Data Management
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".json" 
+            style={{ display: 'none' }} 
+          />
           <button className="btn btn-ghost" onClick={handleExport}>
             <Download size={14} /> Export Backup
+          </button>
+          <button className="btn btn-ghost" onClick={handleImportClick}>
+            <Upload size={14} /> Import Backup
           </button>
           <button className="btn btn-ghost" style={{ borderColor: 'rgba(255,68,68,0.3)', color: '#FF6B6B' }} onClick={handleClearData}>
             <Trash2 size={14} /> Clear All Data
