@@ -83,7 +83,7 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
       {/* ─── Sidebar Panel ─── */}
       <aside className={`sidebar-panel ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-panel-header">
-          <h2>Navigation</h2>
+          <h2>Operations</h2>
           <button className="sidebar-panel-close" onClick={() => setSidebarOpen(false)}>
             <X size={16} />
           </button>

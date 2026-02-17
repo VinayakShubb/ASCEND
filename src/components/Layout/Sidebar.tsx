@@ -56,7 +56,7 @@ export const Sidebar = ({ currentView, setView, collapsed, setCollapsed }: Sideb
       </div>
 
       <nav className="sidebar-nav">
-        {!collapsed && <div className="sidebar-section-label">Navigation</div>}
+        {!collapsed && <div className="sidebar-section-label">Operations</div>}
         {mainNav.map(item => (
           <button
             key={item.id}
