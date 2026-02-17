@@ -172,7 +172,10 @@ export const AnalyticsPage = () => {
         <div className="card-title mb-1">30-Day Performance Trend</div>
         <div style={{ width: '100%', height: 220 }}>
           <ResponsiveContainer>
-            <AreaChart data={trendData}>
+            <AreaChart 
+              data={trendData}
+              margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
@@ -184,11 +187,11 @@ export const AnalyticsPage = () => {
                 tick={{ fill: '#525252', fontSize: 10 }}
                 axisLine={{ stroke: '#333' }}
                 tickLine={false}
-                interval={4}
+                interval={6} 
               />
               <YAxis 
                 tick={{ fill: '#525252', fontSize: 10 }}
-                axisLine={{ stroke: '#333' }}
+                axisLine={false}
                 tickLine={false}
                 domain={[0, 100]}
               />
