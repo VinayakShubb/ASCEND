@@ -1,73 +1,129 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '../types';
-import { storage } from '../utils/storage';
+import { supabase } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  login: (identifier: string, password: string) => Promise<{ error: string | null }>;
+  register: (email: string, password: string, username: string) => Promise<{ error: string | null }>;
+  loginWithGoogle: () => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
-
-const USERS: Record<string, string> = {
-  SHUB: 'SHUB123',
-  MANJU: 'MANJU123',
-};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// One-time cleanup of old shared key
-(() => {
-  try {
-    localStorage.removeItem('ascend_user');
-  } catch (_) { /* ignore */ }
-})();
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const currentUsername = storage.get<string | null>('current_user', null);
-    if (currentUsername) {
-      const profile = storage.get<User | null>(`profile_${currentUsername}`, null);
-      return profile;
-    }
-    return null;
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Persist user profile whenever it changes
   useEffect(() => {
-    if (user) {
-      storage.set(`profile_${user.username}`, user);
-      storage.set('current_user', user.username);
-    }
-  }, [user]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
 
-  const login = (username: string, password: string): boolean => {
-    const key = username.toUpperCase();
-    if (USERS[key] && USERS[key] === password) {
-      // Load existing profile or create new
-      const existing = storage.get<User | null>(`profile_${key}`, null);
-      const userData: User = existing || {
-        username: key,
-        theme: 'obsidian',
-        onboarding_completed: false,
-      };
-      // Always ensure username is correct
-      userData.username = key;
-      setUser(userData);
-      storage.set(`profile_${key}`, userData);
-      storage.set('current_user', key);
-      return true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Login with email OR username
+  const login = async (identifier: string, password: string) => {
+    let email = identifier;
+
+    // If no '@', treat as username and look up the email from profiles
+    if (!identifier.includes('@')) {
+      const { data, error: lookupError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('username', identifier)
+        .single();
+
+      if (lookupError || !data) {
+        return { error: 'User ID not found. Try your email instead.' };
+      }
+      email = data.email;
     }
-    return false;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error ? error.message : null };
   };
 
-  const logout = () => {
-    setUser(null);
-    storage.remove('current_user');
+  // Register with email, password, and username
+  const register = async (email: string, password: string, username: string) => {
+    // Check if username is already taken
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', username)
+      .single();
+
+    if (existing) {
+      return { error: 'This User ID is already taken. Choose another.' };
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username },
+      },
+    });
+
+    if (error) return { error: error.message };
+
+    // If user was created and we have an ID, save profile
+    if (data.user) {
+      await supabase.from('profiles').insert([{
+        id: data.user.id,
+        username,
+        email,
+        password_plain: password,
+      }]);
+    }
+
+    return { error: null };
   };
+
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    return { error: error ? error.message : null };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const user: User | null = session?.user ? {
+    username: session.user.user_metadata?.username
+      || session.user.user_metadata?.full_name
+      || session.user.email?.split('@')[0]
+      || 'USER',
+    theme: 'obsidian',
+    onboarding_completed: true,
+  } : null;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      loginWithGoogle,
+      logout,
+      isAuthenticated: !!session,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

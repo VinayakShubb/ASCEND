@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
-import { LayoutDashboard, CheckSquare, BarChart2, Settings, LogOut, Calendar, X, Activity } from 'lucide-react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { LayoutDashboard, CheckSquare, BarChart2, Settings, Calendar, X, Activity, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { View } from '../../types';
 
 interface MainLayoutProps {
   children: ReactNode;
   currentView: View;
-  setView: Dispatch<SetStateAction<View>>;
+  setView: (view: View) => void;
 }
 
 export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -104,13 +104,31 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
         </div>
 
         <div className="sidebar-footer">
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color)',
+            marginBottom: '0.5rem'
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'var(--accent-primary)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.7rem', fontWeight: 700, color: '#000',
+              flexShrink: 0, textTransform: 'uppercase'
+            }}>
+              {user?.username?.slice(0, 2) || 'U'}
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.username || 'User'}
+            </span>
+          </div>
           <button 
             className="nav-item" 
             onClick={logout}
-            style={{ color: 'var(--text-muted)', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+            style={{ color: 'var(--text-muted)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 1rem', fontSize: '0.75rem' }}
           >
-            <LogOut size={18} />
-            <span>Logout</span>
+            <LogOut size={16} />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>

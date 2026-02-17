@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { format } from 'date-fns';
 import { Plus, Trash2, Check, Archive } from 'lucide-react';
@@ -8,26 +8,6 @@ import { getStreak } from '../../utils/calculations';
 export const HabitsPage = () => {
   const { habits, logs, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
   const [showModal, setShowModal] = useState(false);
-
-  // Handle back button to close modal
-  useEffect(() => {
-    const handlePopState = () => {
-      // If we popped state and hash is gone, close modal
-      if (window.location.hash !== '#new-protocol') {
-        setShowModal(false);
-      }
-    };
-
-    if (showModal) {
-      // Push state when modal opens
-      window.history.pushState({ modal: true }, '', '#new-protocol');
-      window.addEventListener('popstate', handlePopState);
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [showModal]);
 
   const [filter, setFilter] = useState<'all' | 'active' | 'archived'>('active');
   const today = format(new Date(), 'yyyy-MM-dd');

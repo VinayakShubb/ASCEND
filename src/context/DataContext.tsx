@@ -1,95 +1,140 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Habit, HabitLog } from '../types';
-import { storage } from '../utils/storage';
+import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-
-const generateId = () => crypto.randomUUID();
 
 interface DataContextType {
   habits: Habit[];
   logs: HabitLog[];
-  addHabit: (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => void;
-  updateHabit: (id: string, updates: Partial<Habit>) => void;
-  deleteHabit: (id: string) => void;
-  toggleHabitCompletion: (habitId: string, date: string) => void;
+  loading: boolean;
+  addHabit: (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => Promise<void>;
+  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
+  toggleHabitCompletion: (habitId: string, date: string) => Promise<void>;
   getHabitStatus: (habitId: string, date: string) => 'completed' | 'missed' | 'skipped' | 'pending';
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  const username = user?.username || '__guest__';
-  
-  // Per-user storage keys
-  const habitsKey = `${username}_habits`;
-  const logsKey = `${username}_logs`;
+  const { isAuthenticated } = useAuth();
 
-  const [habits, setHabits] = useState<Habit[]>(() => storage.get<Habit[]>(habitsKey, []));
-  const [logs, setLogs] = useState<HabitLog[]>(() => storage.get<HabitLog[]>(logsKey, []));
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // When user changes (login/logout), reload their data
+  // Fetch initial data
   useEffect(() => {
-    setHabits(storage.get<Habit[]>(habitsKey, []));
-    setLogs(storage.get<HabitLog[]>(logsKey, []));
-  }, [username, habitsKey, logsKey]);
+    if (!isAuthenticated) {
+      setHabits([]);
+      setLogs([]);
+      return;
+    }
 
-  // Persist habits whenever they change
-  useEffect(() => {
-    storage.set(habitsKey, habits);
-  }, [habits, habitsKey]);
+    const fetchData = async () => {
+      setLoading(true);
+      
+      const { data: habitsData } = await supabase
+        .from('habits')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-  // Persist logs whenever they change
-  useEffect(() => {
-    storage.set(logsKey, logs);
-  }, [logs, logsKey]);
+      const { data: logsData } = await supabase
+        .from('habit_logs')
+        .select('*');
 
-  const addHabit = (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => {
-    const newHabit: Habit = {
-      ...habitData,
-      id: generateId(),
-      created_at: new Date().toISOString(),
-      archived: false,
+      if (habitsData) setHabits(habitsData as Habit[]);
+      if (logsData) setLogs(logsData as HabitLog[]);
+      
+      setLoading(false);
     };
-    setHabits(prev => [...prev, newHabit]);
+
+    fetchData();
+  }, [isAuthenticated]);
+
+  const addHabit = async (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('habits')
+      .insert([{
+        ...habitData,
+        user_id: user.id,
+      }])
+      .select()
+      .single();
+
+    if (data && !error) {
+      setHabits(prev => [...prev, data as Habit]);
+    }
   };
 
-  const updateHabit = (id: string, updates: Partial<Habit>) => {
-    setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
+  const updateHabit = async (id: string, updates: Partial<Habit>) => {
+    const { error } = await supabase
+      .from('habits')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
+    }
   };
    
-  const deleteHabit = (id: string) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
+  const deleteHabit = async (id: string) => {
+    const { error } = await supabase
+      .from('habits')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setHabits(prev => prev.filter(h => h.id !== id));
+    }
   };
 
-  const toggleHabitCompletion = (habitId: string, date: string) => {
-    setLogs(prev => {
-      const existingLogIndex = prev.findIndex(l => l.habit_id === habitId && l.date === date);
-      
-      if (existingLogIndex >= 0) {
-        const newLogs = [...prev];
-        newLogs.splice(existingLogIndex, 1);
-        return newLogs;
-      } else {
-        const newLog: HabitLog = {
-          id: generateId(),
+  const toggleHabitCompletion = async (habitId: string, date: string) => {
+    const existingLog = logs.find(l => l.habit_id === habitId && l.date === date);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    if (existingLog) {
+      // DELETE
+      const { error } = await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('id', existingLog.id);
+
+      if (!error) {
+        setLogs(prev => prev.filter(l => l.id !== existingLog.id));
+      }
+    } else {
+      // INSERT
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .insert([{
           habit_id: habitId,
           date,
           status: 'completed',
-          timestamp: new Date().toISOString()
-        };
-        return [...prev, newLog];
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (data && !error) {
+        setLogs(prev => [...prev, data as HabitLog]);
       }
-    });
+    }
   };
 
   const getHabitStatus = (habitId: string, date: string): 'completed' | 'missed' | 'skipped' | 'pending' => {
     const log = logs.find(l => l.habit_id === habitId && l.date === date);
-    return log ? log.status : 'pending';
+    return log ? log.status as any : 'pending';
   };
 
   return (
-    <DataContext.Provider value={{ habits, logs, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus }}>
+    <DataContext.Provider value={{ 
+      habits, logs, loading, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus 
+    }}>
       {children}
     </DataContext.Provider>
   );
@@ -102,3 +147,4 @@ export const useData = () => {
   }
   return context;
 };
+

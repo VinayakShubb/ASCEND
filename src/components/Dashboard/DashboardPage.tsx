@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { format } from 'date-fns';
 import { Check, Plus, Trash2, Flame } from 'lucide-react';
@@ -10,24 +10,6 @@ export const DashboardPage = () => {
   const { habits, logs, addHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
   const [showModal, setShowModal] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
-
-  // Handle back button to close modal
-  useEffect(() => {
-    const handlePopState = () => {
-      if (window.location.hash !== '#new-protocol') {
-        setShowModal(false);
-      }
-    };
-
-    if (showModal) {
-      window.history.pushState({ modal: true }, '', '#new-protocol');
-      window.addEventListener('popstate', handlePopState);
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [showModal]);
 
   const activeHabits = habits.filter(h => !h.archived);
   const completedCount = activeHabits.filter(h => getHabitStatus(h.id, today) === 'completed').length;
