@@ -107,31 +107,57 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
+    // OPTIMISTIC UPDATE: Update UI immediately
     if (existingLog) {
-      // DELETE
-      const { error } = await supabase
-        .from('habit_logs')
-        .delete()
-        .eq('id', existingLog.id);
-
-      if (!error) {
-        setLogs(prev => prev.filter(l => l.id !== existingLog.id));
-      }
+      setLogs(prev => prev.filter(l => l.id !== existingLog.id));
     } else {
-      // INSERT
-      const { data, error } = await supabase
-        .from('habit_logs')
-        .insert([{
-          habit_id: habitId,
-          date,
-          status: 'completed',
-          user_id: user.id
-        }])
-        .select()
-        .single();
+      // Create a temporary log for immediate display
+      const tempLog: HabitLog = {
+        id: `temp-${Date.now()}`,
+        habit_id: habitId,
+        date,
+        status: 'completed',
+        timestamp: new Date().toISOString()
+      };
+      setLogs(prev => [...prev, tempLog]);
+    }
 
-      if (data && !error) {
-        setLogs(prev => [...prev, data as HabitLog]);
+    try {
+      if (existingLog) {
+        // DELETE from DB
+        const { error } = await supabase
+          .from('habit_logs')
+          .delete()
+          .eq('id', existingLog.id);
+
+        if (error) throw error;
+      } else {
+        // INSERT into DB
+        const { data, error } = await supabase
+          .from('habit_logs')
+          .insert([{
+            habit_id: habitId,
+            date,
+            status: 'completed',
+            user_id: user.id
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Replace temp log with real log from DB
+        if (data) {
+          setLogs(prev => prev.map(l => l.id.startsWith('temp-') && l.habit_id === habitId && l.date === date ? (data as HabitLog) : l));
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling habit:', error);
+      // REVERT optimistic update on error
+      if (existingLog) {
+        setLogs(prev => [...prev, existingLog]);
+      } else {
+        setLogs(prev => prev.filter(l => !(l.habit_id === habitId && l.date === date && l.id.startsWith('temp-'))));
       }
     }
   };
