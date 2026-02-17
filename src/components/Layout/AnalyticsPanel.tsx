@@ -22,9 +22,9 @@ export const AnalyticsPanel = () => {
     ? Math.max(...habitStreaks.map(h => h.streak), 0)
     : 0;
 
-  const topStreakEntry = maxStreak > 0
-    ? habitStreaks.reduce((a, b) => a.streak > b.streak ? a : b)
-    : null;
+  const topStreakEntries = maxStreak > 0
+    ? habitStreaks.filter(h => h.streak === maxStreak)
+    : [];
 
   const last7Days = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
   const habitCompletions = activeHabits.map(h => {
@@ -146,7 +146,7 @@ export const AnalyticsPanel = () => {
           <span style={{ fontSize: '0.5rem', color: 'var(--text-muted)' }}>Today</span>
         </div>
       </div>
-
+      
       {/* Streak — only show protocol name when streak > 0 */}
       <div>
         <div className="analytics-section-title">Top Streak</div>
@@ -156,7 +156,13 @@ export const AnalyticsPanel = () => {
             <div>
               <div className="mono" style={{ fontSize: '1.1rem', fontWeight: 600 }}>{maxStreak} days</div>
               <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                {topStreakEntry ? topStreakEntry.name : 'No active streaks'}
+                {topStreakEntries.length > 0 
+                  ? (
+                    topStreakEntries.length > 2 
+                      ? `${topStreakEntries.slice(0, 2).map(h => h.name).join(', ')} and ${topStreakEntries.length - 2} others`
+                      : topStreakEntries.map(h => h.name).join(', ')
+                  )
+                  : 'No active streaks'}
               </div>
             </div>
           </div>
