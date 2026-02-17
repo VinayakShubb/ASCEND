@@ -1,19 +1,57 @@
 import { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { calculateWeightedScore, calculateDisciplineIndex, calculateDailyCompletion, getStreak } from '../../utils/calculations';
-import { format, subDays } from 'date-fns';
+import { format, subDays, addDays } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus, BarChart2, Target, Flame, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const AnalyticsPage = () => {
   const { habits, logs } = useData();
+  const { user } = useAuth();
   const today = format(new Date(), 'yyyy-MM-dd');
   const activeHabits = habits.filter(h => !h.archived);
 
   // 30-day trend data
   const trendData = useMemo(() => {
+    if (!user?.created_at) return [];
+
+    const registrationDate = new Date(user.created_at);
+    registrationDate.setHours(0,0,0,0);
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+
+    // Calculate days since registration
+    const diffTime = Math.abs(todayDate.getTime() - registrationDate.getTime());
+    const daysSinceRegistration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+    // MODE 1: Journey Mode (First 30 Days)
+    // Used if user is new (< 30 days old)
+    if (daysSinceRegistration <= 30) {
+      return Array.from({ length: 30 }, (_, i) => {
+        const date = addDays(registrationDate, i); // Start from Reg Date, go forward
+        const dateStr = format(date, 'yyyy-MM-dd');
+        
+        // Future dates (or today if no data yet): return null score
+        if (date > todayDate) {
+           return {
+             date: format(date, 'MMM d'),
+             score: null, 
+           };
+        }
+
+        const score = calculateWeightedScore(habits, logs, dateStr);
+        return {
+          date: format(date, 'MMM d'),
+          score: Math.round(score),
+        };
+      });
+    }
+
+    // MODE 2: Rolling Window (Last 30 Days)
+    // Used if user is > 30 days old
     return Array.from({ length: 30 }, (_, i) => {
-      const date = subDays(new Date(), 29 - i);
+      const date = subDays(new Date(), 29 - i); // 29 days ago to today
       const dateStr = format(date, 'yyyy-MM-dd');
       const score = calculateWeightedScore(habits, logs, dateStr);
       return {
@@ -21,7 +59,7 @@ export const AnalyticsPage = () => {
         score: Math.round(score),
       };
     });
-  }, [habits, logs]);
+  }, [habits, logs, user?.created_at]);
 
   // Per-habit detailed analysis
   const habitAnalysis = useMemo(() => {
@@ -164,6 +202,8 @@ export const AnalyticsPage = () => {
                 stroke="var(--accent-primary)"
                 strokeWidth={2}
                 fill="url(#scoreGradient)"
+                dot={{ r: 4, strokeWidth: 0, fill: 'var(--accent-primary)' }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--accent-primary)' }}
               />
             </AreaChart>
           </ResponsiveContainer>
