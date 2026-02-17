@@ -1423,10 +1423,10 @@ body {
 
 /* Levels (High-contrast on dark bg) */
 .hm-cell.lv-0 { background: #2d333b; }
-.hm-cell.lv-1 { background: #0e4429; }
-.hm-cell.lv-2 { background: #006d32; }
-.hm-cell.lv-3 { background: #26a641; }
-.hm-cell.lv-4 { background: #39d353; box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 8px rgba(57, 211, 83, 0.4); }
+.hm-cell.lv-1 { background: color-mix(in srgb, var(--accent-primary) 25%, #2d333b); }
+.hm-cell.lv-2 { background: color-mix(in srgb, var(--accent-primary) 50%, #2d333b); }
+.hm-cell.lv-3 { background: color-mix(in srgb, var(--accent-primary) 75%, #2d333b); }
+.hm-cell.lv-4 { background: var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 8px var(--accent-glow); }
 .hm-cell.lv-future { background: #2d333b; cursor: pointer; opacity: 0.6; }
 .hm-cell.lv-future:hover { opacity: 0.8; }
 
