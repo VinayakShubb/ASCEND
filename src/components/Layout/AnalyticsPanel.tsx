@@ -36,7 +36,7 @@ export const AnalyticsPanel = () => {
 
   // Attention Required: show ALL protocols that need attention (< 5/7 completions), sorted by worst first
   const attentionNeeded = habitCompletions
-    .filter(h => h.completions < 5)
+    .filter(h => h.completions < 5 && h.name && h.name !== 'NaN')
     .sort((a, b) => a.completions - b.completions);
 
   // Weekly heatmap with past day detection
@@ -194,10 +194,10 @@ export const AnalyticsPanel = () => {
             : disciplineIndex >= 80 
               ? '» Peak efficiency. Maintain protocol.' 
               : disciplineIndex >= 50 
-                ? '» Acceptable variance. Optimize weak protocols.' 
+                ? '» Solid momentum. Push for consistency.' 
                 : disciplineIndex > 0 
-                  ? '» Warning: Below threshold. Re-engage protocols.' 
-                  : '» Insufficient data. Complete protocols to generate analysis.'}
+                  ? `» Building up. Current index: ${disciplineIndex}%. Complete today's protocols to climb.`
+                  : '» Fresh start. Complete protocols to generate your index.'}
         </p>
       </div>
     </>

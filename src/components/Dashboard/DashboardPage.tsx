@@ -6,6 +6,7 @@ import type { Difficulty } from '../../types';
 import { calculateDailyCompletion } from '../../utils/calculations';
 import { getStreak } from '../../utils/calculations';
 
+
 export const DashboardPage = () => {
   const { habits, logs, addHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
   const [showModal, setShowModal] = useState(false);

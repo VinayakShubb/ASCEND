@@ -43,7 +43,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         .from('habit_logs')
         .select('*');
 
-      if (habitsData) setHabits(habitsData as Habit[]);
+      // Filter out corrupted/invalid habits (e.g. "NoN", empty names)
+      const validHabits = (habitsData || []).filter((h: any) => {
+        const name = (h.name || '').trim().toLowerCase();
+        return name.length > 0 && !['nan', 'non', 'null', 'undefined'].includes(name);
+      });
+
+      setHabits(validHabits as Habit[]);
       if (logsData) setLogs(logsData as HabitLog[]);
       
       setLoading(false);
@@ -53,6 +59,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated]);
 
   const addHabit = async (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => {
+    // Prevent creating habits with invalid names
+    const name = (habitData.name || '').trim();
+    if (!name || ['nan', 'non', 'null', 'undefined'].includes(name.toLowerCase())) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 

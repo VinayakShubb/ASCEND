@@ -44,7 +44,7 @@ The daily interface is designed for **focus and immediacy**.
 
 ### 🧠 Intelligence Engine (Analytics)
 Data visualization for behavioral patterns.
-- **GitHub-Style Heatmap**: A 365-day grid visualization of discipline intensity.
+- **GitHub-Style Heatmap**: A 12-month grid visualization of discipline intensity (Theme Adaptive).
 - **Consistency Delats**: Tracks week-over-week performance changes.
 - **30-Day Trendline**: Visualizes momentum shifts.
 
