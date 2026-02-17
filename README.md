@@ -1,138 +1,100 @@
 # ASCEND
+### Personal Evolution System
+**by VINAYAK // ShubV**
 
-**Personal Discipline Evolution System**
+ASCEND is a cloud-native, discipline-quantifying system designed to track personal evolution. It goes beyond simple habit tracking by introducing weighted difficulty ratings, detailed analytics, and a "Discipline Index" that serves as a single metric for your consistency.
 
-ASCEND is a premium, single-user habit tracking web application designed to quantify, visualize, and optimize daily discipline. It transforms everyday habits into measurable "protocols" with weighted scoring, streak tracking, and deep analytics — giving you a single number that captures your true consistency.
+![ASCEND Banner](public/logo.png) 
 
----
+## 🚀 Features
 
-## What It Does
+### 1. Protocol Architecture
+Define your daily operations with precision.
+- **Weighted Difficulty**: Assign multipliers (1.0x - 2.0x) to habits.
+- **Frequency Control**: Set specific days for protocols (e.g., "Mon, Wed, Fri").
+- **Archival System**: Retire old habits without losing their data history.
 
-ASCEND lets you define daily habits (called **Protocols**), assign them difficulty levels, and track completion every day. It then computes a suite of performance metrics to help you understand your discipline patterns over time.
+### 2. The Command Center
+Your daily heads-up display.
+- **Focus Mode**: only shows today's active protocols.
+- **Quick Action**: One-tap completion triggers haptic-style visual feedback.
+- **Smart Alerts**: "Attention Required" section highlights falling streaks.
 
-### Core Concepts
+### 3. Intelligence Engine
+Data-driven insights into your behavior.
+- **Discipline Index**: A 0-100 score representing your weighted 7-day consistency.
+- **Heatmaps**: GitHub-style activity grids for every month.
+- **Streak Analytics**: tracks current and best streaks for every protocol.
 
-| Concept | Description |
-|---|---|
-| **Protocols** | Daily habits you commit to (e.g., Morning Meditation, Workout, Reading) |
-| **Difficulty Multiplier** | Each protocol is rated Easy (1.0×), Medium (1.2×), Hard (1.5×), or Extreme (2.0×) — harder habits contribute more to your score |
-| **Discipline Index** | A 7-day rolling weighted average of your daily completion scores — your single number of truth |
-| **Streaks** | Consecutive days a protocol has been completed without a break |
-| **Consistency** | 7-day and 30-day completion percentages per protocol |
-
----
-
-## Pages & Features
-
-### 🏠 Landing Page
-Animated hero with floating glow orbs, scroll-reveal feature cards, and a central call-to-action. Pure branding — no metrics.
-
-### 📊 Command Center (Dashboard)
-- Today's completion percentage and progress bar
-- One-tap protocol completion toggles
-- Streak badges per protocol
-- Add / delete protocols
-
-### 📅 Calendar (Contribution Heatmap)
-GitHub-style heatmap starting from January 2026. Each cell represents a day, color-coded by completion intensity:
-- **Empty** → no activity
-- **Light → Dark accent** → increasing completion %
-- **Red ×** → missed day (past day with 0% completion)
-- Click any cell to view the day's protocol breakdown
-- Past days are **locked** (read-only)
-
-### 📈 Intelligence (Analytics)
-- 30-day performance trend chart
-- Per-protocol breakdown: 7d/30d consistency, weekly completions, all-time count
-- Color-coded progress bars and 7-day pattern dots
-- System-generated insights
-
-### ⚡ Discipline Index (Slide-in Panel)
-- Animated ring showing your current Discipline Index
-- Weekly heatmap (last 7 days)
-- Daily load breakdown
-- Attention-required alerts for underperforming protocols
-
-### ⚙️ System Config (Settings)
-- Theme switching
-- Data export / import (JSON)
-- Full data reset
-
-### ℹ️ About
-Explains every metric, difficulty multipliers, and how each page works.
+### 4. Cloud Identity
+- **Universal Sync**: Seamlessly switch between desktop and mobile.
+- **Secure Auth**: Powered by Supabase Auth with Row Level Security.
+- **Profile System**: Custom User IDs and avatars.
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | React 18 + TypeScript |
-| Build Tool | Vite |
-| Styling | Vanilla CSS with CSS custom properties (dark theme) |
-| Charts | Recharts |
-| Icons | Lucide React |
-| Fonts | Inter, JetBrains Mono (Google Fonts) |
-| Storage | Browser localStorage (no backend) |
-
----
-
-## Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-
-# Production build
-npm run build
-```
-
-The app runs at `http://localhost:5173`.
-
-## Login Credentials
-
-| Username | Password |
-|---|---|
-| `SHUB` | `SHUB123` |
-| `MANJU` | `MANJU123` |
-
-> Authentication is client-side only. All data is stored in the browser's localStorage.
-
----
-
-## Project Structure
+## 🛠️ Project Structure
 
 ```
 ascend/
 ├── src/
-│   ├── components/
-│   │   ├── Auth/          # Login page
-│   │   ├── Dashboard/     # All page components (Dashboard, Calendar, Analytics, About, Settings)
-│   │   └── Layout/        # MainLayout, Sidebar, Navbar, AnalyticsPanel
-│   ├── context/           # AuthContext, DataContext (state management)
-│   ├── styles/            # global.css, variables.css (design system)
-│   ├── utils/             # calculations.ts, storage.ts
-│   ├── types.ts           # TypeScript interfaces
-│   └── main.tsx           # Entry point
-├── index.html
-└── package.json
+│   ├── components/      # UI Modules (Dashboard, Analytics, Auth)
+│   ├── context/         # Global State (Auth, Data Sync)
+│   ├── lib/             # Supabase Client Configuration
+│   ├── styles/          # Global CSS & Design System
+│   └── utils/           # Math Engines (Scoring, Streaks)
+├── supabase_schema.sql  # Database Definitions
+└── .env.local           # Environment Variables
 ```
 
+## ⚡ Quick Start
+
+### Prerequisites
+- Node.js 16+
+- A free [Supabase](https://supabase.com) account
+
+### Installation
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/ascend.git
+   cd ascend
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Database**
+   - Create a new Supabase project.
+   - Go to the **SQL Editor** in Supabase and run the content of `supabase_schema.sql`.
+
+4. **Set Environment Keys**
+   - Rename `.env.example` to `.env.local` (or create new).
+   - Add your Supabase URL and Anon Key:
+     ```env
+     VITE_SUPABASE_URL=your_project_url
+     VITE_SUPABASE_ANON_KEY=your_public_key
+     ```
+
+5. **Launch System**
+   ```bash
+   npm run dev
+   ```
+
 ---
 
-## Design Philosophy
+## 🧠 Design Philosophy
+ASCEND is built with the **"Obsidian"** design language:
+- **Dark Mode Only**: Designed for focus, minimizing eye strain.
+- **Data Density**: High information density without clutter.
+- **Immediacy**: Interactions should be instant (optimistic UI updates).
 
-ASCEND is built around three principles:
-
-1. **Quantify Everything** — Every action is scored, weighted, and tracked. No guesswork.
-2. **Friction-Free Logging** — One tap to complete a protocol. The system handles the math.
-3. **Visual Momentum** — Streaks, heatmaps, and animated metrics create a feedback loop that turns discipline into habit.
+## 🔒 Security
+- **RLS (Row Level Security)**: Database policies ensure users can ONLY access their own data.
+- **No Plaintext Passwords**: All credentials are hashed via bcrypt.
 
 ---
-
-<p align="center">
-  <strong>ASCEND</strong> · Private · Single-User Architecture
-</p>
+**Version**: 2.0.0 (Cloud-Native)
+**License**: MIT
+**Credits**: Built by VINAYAK // ShubV
