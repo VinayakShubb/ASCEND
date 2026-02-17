@@ -1368,51 +1368,91 @@ body {
 .hm-cell {
   width: 13px;
   height: 13px;
-  border-radius: 2px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
 .hm-cell:hover {
-  outline: 2px solid var(--text-secondary);
-  outline-offset: 0px;
-  transform: scale(1.15);
-  z-index: 2;
+  outline: none;
+  transform: translateY(-2px);
+  z-index: 10;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  border-color: rgba(255,255,255,0.25);
 }
 
-/* Levels */
-.hm-cell.lv-0 { background: rgba(255,255,255,0.04); }
-.hm-cell.lv-1 { background: color-mix(in srgb, var(--accent-primary) 25%, var(--bg-primary)); }
-.hm-cell.lv-2 { background: color-mix(in srgb, var(--accent-primary) 50%, var(--bg-primary)); }
-.hm-cell.lv-3 { background: color-mix(in srgb, var(--accent-primary) 75%, var(--bg-primary)); }
-.hm-cell.lv-4 { background: var(--accent-primary); box-shadow: 0 0 6px var(--accent-glow); }
-.hm-cell.lv-future { background: rgba(255,255,255,0.015); cursor: default; }
-.hm-cell.lv-future:hover { outline: none; transform: none; }
+/* Tooltip on hover */
+.hm-cell .hm-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-size: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  z-index: 100;
+}
+
+.hm-cell .hm-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #1a1a2e;
+}
+
+.hm-cell:hover .hm-tooltip {
+  display: block;
+}
+
+/* Levels (High-contrast on dark bg) */
+.hm-cell.lv-0 { background: #2d333b; }
+.hm-cell.lv-1 { background: #0e4429; }
+.hm-cell.lv-2 { background: #006d32; }
+.hm-cell.lv-3 { background: #26a641; }
+.hm-cell.lv-4 { background: #39d353; box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 8px rgba(57, 211, 83, 0.4); }
+.hm-cell.lv-future { background: #2d333b; cursor: pointer; opacity: 0.6; }
+.hm-cell.lv-future:hover { opacity: 0.8; }
 
 /* States */
 .hm-cell.is-today {
   outline: 2px solid var(--accent-primary);
   outline-offset: -1px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 6px var(--accent-glow);
 }
 
 .hm-cell.is-selected {
   outline: 2px solid #fff;
   outline-offset: 0px;
-  transform: scale(1.2);
-  z-index: 3;
+  transform: scale(1.3);
+  z-index: 5;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
 
 .hm-cell.is-missed {
-  background: rgba(255, 68, 68, 0.18);
+  background: #2b0808;
+  border-color: #551111;
 }
 
 /* × mark on missed days */
 .hm-x {
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   color: #FF4444;
   line-height: 1;
   font-weight: 700;

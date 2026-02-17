@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO, addYears } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { calculateDailyCompletion } from '../../utils/calculations';
 
@@ -14,16 +14,19 @@ export const CalendarPage = () => {
   const todayDate = startOfDay(today);
   const activeHabits = habits.filter(h => !h.archived);
 
-  // Dynamic start: User's creation date (or Fallback to Jan 1, 2026 if missing)
+  // 12-month window starting from registration date
   const yearStart = useMemo(() => {
-    return user?.created_at ? startOfDay(parseISO(user.created_at)) : new Date(2026, 0, 1);
+    return user?.created_at ? startOfDay(parseISO(user.created_at)) : todayDate;
   }, [user?.created_at]);
+  const yearEnd = useMemo(() => {
+    const end = addYears(yearStart, 1);
+    return new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1); // 12 months exactly
+  }, [yearStart]);
 
-  // Generate all days from Jan 1 to today
+  // Generate all days from registration to registration + 12 months
   const allDays = useMemo(() => {
-    const end = today > yearStart ? today : yearStart;
-    return eachDayOfInterval({ start: yearStart, end });
-  }, [todayStr]);
+    return eachDayOfInterval({ start: yearStart, end: yearEnd });
+  }, [yearStart, yearEnd]);
 
   // Build heatmap data
   const heatmapData = useMemo(() => {
@@ -112,7 +115,7 @@ export const CalendarPage = () => {
     <div className="page-container fade-in">
       <div className="page-header">
         <div className="page-title">Calendar</div>
-        <div className="page-subtitle">Protocol execution since January 2026</div>
+        <div className="page-subtitle">Protocol execution — since {format(yearStart, 'MMM d, yyyy')}</div>
       </div>
 
       {/* Stats Row */}
@@ -186,8 +189,11 @@ export const CalendarPage = () => {
                           missed ? 'is-missed' : '',
                         ].join(' ')}
                         onClick={() => !day.futureDay && setSelectedDate(day.date)}
-                        title={`${format(new Date(day.date + 'T00:00:00'), 'MMM d')}: ${day.futureDay ? 'Future' : day.score + '%'}`}
                       >
+                        <span className="hm-tooltip">
+                          {format(new Date(day.date + 'T00:00:00'), 'MMM d, yyyy')}
+                          {!day.futureDay && ` · ${day.score}%`}
+                        </span>
                         {missed && <span className="hm-x">×</span>}
                       </div>
                     );
