@@ -3,8 +3,7 @@
 **by VINAYAK // ShubV**
 
 ASCEND is a cloud-native, discipline-quantifying system designed to track personal evolution. It goes beyond simple habit tracking by introducing weighted difficulty ratings, detailed analytics, and a "Discipline Index" that serves as a single metric for your consistency.
-
-![ASCEND Banner](public/logo.png) 
+ 
 
 ## 🚀 Features
 
