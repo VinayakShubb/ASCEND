@@ -1,19 +1,23 @@
 import { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
+import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { calculateDailyCompletion } from '../../utils/calculations';
 
 export const CalendarPage = () => {
   const { habits, logs, toggleHabitCompletion, getHabitStatus } = useData();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayDate = startOfDay(today);
   const activeHabits = habits.filter(h => !h.archived);
 
-  // Fixed start: January 1, 2026
-  const yearStart = new Date(2026, 0, 1); // Jan 1, 2026
+  // Dynamic start: User's creation date (or Fallback to Jan 1, 2026 if missing)
+  const yearStart = useMemo(() => {
+    return user?.created_at ? startOfDay(parseISO(user.created_at)) : new Date(2026, 0, 1);
+  }, [user?.created_at]);
 
   // Generate all days from Jan 1 to today
   const allDays = useMemo(() => {

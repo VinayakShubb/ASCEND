@@ -112,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       || 'USER',
     theme: 'obsidian',
     onboarding_completed: true,
+    created_at: session.user.created_at,
   } : null;
 
   return (

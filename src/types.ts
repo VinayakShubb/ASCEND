@@ -12,6 +12,7 @@ export interface User {
   future_identity?: string;
   theme: string;
   onboarding_completed: boolean;
+  created_at?: string; // ISO Date string
 }
 
 export interface Habit {
