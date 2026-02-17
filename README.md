@@ -1,99 +1,81 @@
-# ASCEND
-### Personal Evolution System
-**by VINAYAK // ShubV**
+# ASCEND // PERSONAL EVOLUTION SYSTEM
+### Architect: VINAYAK // ShubV
 
-ASCEND is a cloud-native, discipline-quantifying system designed to track personal evolution. It goes beyond simple habit tracking by introducing weighted difficulty ratings, detailed analytics, and a "Discipline Index" that serves as a single metric for your consistency.
- 
-
-## 🚀 Features
-
-### 1. Protocol Architecture
-Define your daily operations with precision.
-- **Weighted Difficulty**: Assign multipliers (1.0x - 2.0x) to habits.
-- **Frequency Control**: Set specific days for protocols (e.g., "Mon, Wed, Fri").
-- **Archival System**: Retire old habits without losing their data history.
-
-### 2. The Command Center
-Your daily heads-up display.
-- **Focus Mode**: only shows today's active protocols.
-- **Quick Action**: One-tap completion triggers haptic-style visual feedback.
-- **Smart Alerts**: "Attention Required" section highlights falling streaks.
-
-### 3. Intelligence Engine
-Data-driven insights into your behavior.
-- **Discipline Index**: A 0-100 score representing your weighted 7-day consistency.
-- **Heatmaps**: GitHub-style activity grids for every month.
-- **Streak Analytics**: tracks current and best streaks for every protocol.
-
-### 4. Cloud Identity
-- **Universal Sync**: Seamlessly switch between desktop and mobile.
-- **Secure Auth**: Powered by Supabase Auth with Row Level Security.
-- **Profile System**: Custom User IDs and avatars.
+ASCEND is a proprietary, cloud-native discipline quantification engine. Unlike passive habit trackers, ASCEND is an active feedback system designed to measure personal consistency against calibrated difficulty.
 
 ---
 
-## 🛠️ Project Structure
+## 1. System Philosophy
 
-```
-ascend/
-├── src/
-│   ├── components/      # UI Modules (Dashboard, Analytics, Auth)
-│   ├── context/         # Global State (Auth, Data Sync)
-│   ├── lib/             # Supabase Client Configuration
-│   ├── styles/          # Global CSS & Design System
-│   └── utils/           # Math Engines (Scoring, Streaks)
-├── supabase_schema.sql  # Database Definitions
-└── .env.local           # Environment Variables
-```
+The core thesis of ASCEND is that **discipline is measurable**. 
+By assigning difficulty multipliers to every action, the system normalizes output across different domains (physical, intellectual, creative). A "perfect day" isn't about checking boxes—it's about maximizing your **Discipline Index**.
 
-## ⚡ Quick Start
+### The Discipline Index Algorithm
+Your Discipline Index (0-100) is a rolling 7-day weighted average calculated as:
 
-### Prerequisites
-- Node.js 16+
-- A free [Supabase](https://supabase.com) account
+$$
+\text{Index} = \frac{\sum (\text{Daily Score} \times \text{Weight})}{7} \times 10
+$$
 
-### Installation
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/ascend.git
-   cd ascend
-   ```
+Where:
+- **Daily Score** = (Sum of Completed Protocol Difficulties) / (Sum of Active Protocol Difficulties)
+- **Weight** = Recency factor (yesterday matters more than 7 days ago)
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Database**
-   - Create a new Supabase project.
-   - Go to the **SQL Editor** in Supabase and run the content of `supabase_schema.sql`.
-
-4. **Set Environment Keys**
-   - Rename `.env.example` to `.env.local` (or create new).
-   - Add your Supabase URL and Anon Key:
-     ```env
-     VITE_SUPABASE_URL=your_project_url
-     VITE_SUPABASE_ANON_KEY=your_public_key
-     ```
-
-5. **Launch System**
-   ```bash
-   npm run dev
-   ```
+This math ensures that consistency is the only way to maintain a high score. One missed day causes a sharp drop, requiring multiple perfect days to recover.
 
 ---
 
-## 🧠 Design Philosophy
-ASCEND is built with the **"Obsidian"** design language:
-- **Dark Mode Only**: Designed for focus, minimizing eye strain.
-- **Data Density**: High information density without clutter.
-- **Immediacy**: Interactions should be instant (optimistic UI updates).
+## 2. Core Modules
 
-## 🔒 Security
-- **RLS (Row Level Security)**: Database policies ensure users can ONLY access their own data.
-- **No Plaintext Passwords**: All credentials are hashed via bcrypt.
+### 🛡️ Protocol Registry
+Daily operations are defined as **Protocols**, not tasks.
+- **Difficulty Calibration**:
+  - **Easy (1.0x)**: Maintenance (Hydration, Reading)
+  - **Medium (1.2x)**: Standard resistance (Workout)
+  - **Hard (1.5x)**: High friction (Deep Work)
+  - **Extreme (2.0x)**: Maximum effort (Sprints)
+- **Archive System**: Protocols can be retired without losing historical data.
+
+### 📊 Command Center (Dashboard)
+The daily interface is designed for **focus and immediacy**.
+- **Haptic-Visual Feedback**: ONE-TAP completion with instant state updates.
+- **Attention System**: Automatically flags protocols with falling completion rates (<80%).
+- **Current Streak Display**: Real-time counter of consecutive executions.
+
+### 🧠 Intelligence Engine (Analytics)
+Data visualization for behavioral patterns.
+- **GitHub-Style Heatmap**: A 365-day grid visualization of discipline intensity.
+- **Consistency Delats**: Tracks week-over-week performance changes.
+- **30-Day Trendline**: Visualizes momentum shifts.
+
+### 🔐 Identity & Security
+- **Cloud-Native**: Powered by a Supabase backend for cross-device synchronization.
+- **Row Level Security (RLS)**: Database policies ensure zero data leakage between users.
+- **Encrypted Auth**: Secure password hashing via bcrypt.
 
 ---
-**Version**: 2.0.0 (Cloud-Native)
-**License**: MIT
-**Credits**: Built by VINAYAK // ShubV
+
+## 3. Technical Architecture
+
+### Frontend (Interface)
+- **Framework**: React 18 + TypeScript + Vite
+- **State Management**: Context API + Optimistic UI Updates
+- **Design System**: Custom "Obsidian" Theme (CSS Variables)
+
+### Backend (Infrastructure)
+- **Database**: PostgreSQL (Supabase)
+- **Auth**: Supabase Auth (JWT Tokens)
+- **Realtime**: WebSocket subscriptions for instant sync
+
+---
+
+## 4. Visual Language
+**"Obsidian Glass"**
+- **Palette**: Deep Black (#000000), Void (#0a0a0a), and Neon Accents.
+- **Materials**: Glassmorphism (`backdrop-filter: blur(20px)`) for depth.
+- **Typography**: `JetBrains Mono` for data, `Inter` for interface.
+
+---
+**STATUS: OPERATIONAL**
+**VERSION: 2.1.0**
+**ACCESS: PRIVATE // SINGLE-USER**
