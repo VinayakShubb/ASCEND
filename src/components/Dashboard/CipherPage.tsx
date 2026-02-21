@@ -79,7 +79,6 @@ export const CipherPage = () => {
         mockLogs.push({ id: `mock-${h.id}`, habit_id: h.id, date: todayStr, status: 'completed', created_at: new Date().toISOString() } as any);
       }
     });
-    const disciplineIndex = calculateDisciplineIndex(habits, logs);
     const maxDi = Math.min(100, Math.ceil(calculateDisciplineIndex(habits, mockLogs)));
 
     // Per-habit stats
@@ -705,7 +704,7 @@ export const CipherPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column' as const }}>
-              {analysis.orders.map((order, idx) => (
+              {analysis.orders.map((order) => (
                 <div key={order.rank} className="directive-card scroll-slide-left" style={{ borderRadius: 6 }}>
                   <div className="directive-card-inner" style={{ display: 'flex', flexDirection: 'column' as const }}>
                     <div className="directive-top-row" style={{ display: 'flex' }}>

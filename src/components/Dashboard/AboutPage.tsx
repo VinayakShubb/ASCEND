@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Target, Flame, Calendar, BarChart2, Zap, Shield, ArrowRight, ChevronDown, Cpu, Brain, Crosshair, BookOpen } from 'lucide-react';
+import { Target, Flame, Calendar, BarChart2, Zap, Shield, ArrowRight, ChevronDown, Cpu, Brain, BookOpen } from 'lucide-react';
 import { CipherAvatar } from '../UI/CipherAvatar';
 import type { View } from '../../types';
 
