@@ -79,7 +79,7 @@ The face of the system is a blocky, pixel-art robot with reactive LED eyes.
 ### Frontend (Interface)
 - **Framework**: React 18 + TypeScript + Vite
 - **Routing**: Internal state-based navigation with automatic scroll-restoration.
-- **Deployment**: CI/CD pipeline integrated with GitHub and Vercel.
+- **Deployment**: GitHub and Vercel.
 
 ### Backend (Infrastructure)
 - **Database**: PostgreSQL (Supabase)
