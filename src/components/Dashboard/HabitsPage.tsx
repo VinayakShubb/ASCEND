@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Plus, Trash2, Check, Archive } from 'lucide-react';
 import type { Difficulty } from '../../types';
 import { getStreak } from '../../utils/calculations';
+import { AppFooter } from '../UI/AppFooter';
 
 export const HabitsPage = () => {
   const { habits, logs, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
@@ -123,6 +124,8 @@ export const HabitsPage = () => {
           )}
         </div>
       )}
+
+      <AppFooter />
 
       {/* Add Modal */}
       {showModal && <AddHabitModal onClose={() => setShowModal(false)} onAdd={addHabit} />}

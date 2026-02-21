@@ -1,20 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
-import { Check, Plus, Trash2, Flame } from 'lucide-react';
+import { Check, Plus, Trash2, Flame, RefreshCw } from 'lucide-react';
 import type { Difficulty } from '../../types';
-import { calculateDailyCompletion } from '../../utils/calculations';
-import { getStreak } from '../../utils/calculations';
-
+import { calculateDailyCompletion, getStreak } from '../../utils/calculations';
+import { getDailyBrief, type BriefOutput } from '../../utils/aiBrief';
+import { CipherAvatar } from '../UI/CipherAvatar';
+import { AppFooter } from '../UI/AppFooter';
 
 export const DashboardPage = () => {
   const { habits, logs, addHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const activeHabits = habits.filter(h => !h.archived);
   const completedCount = activeHabits.filter(h => getHabitStatus(h.id, today) === 'completed').length;
   const dailyCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
+
+  const [aiBrief, setAiBrief] = useState<BriefOutput | null>(null);
+  const [isBriefLoading, setIsBriefLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchBrief = async () => {
+      if (!user || activeHabits.length === 0) return;
+      setIsBriefLoading(true);
+      const brief = await getDailyBrief(user.username, habits, logs);
+      setAiBrief(brief);
+      setIsBriefLoading(false);
+    };
+    fetchBrief();
+  }, [user, habits, logs, activeHabits.length]);
+
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'elite': return '#00ff88';
+      case 'solid': return '#00cc66';
+      case 'slipping': return '#ffaa00';
+      case 'critical': return '#ff4444';
+      default: return 'var(--text-secondary)';
+    }
+  };
 
   return (
     <div className="page-container fade-in">
@@ -30,6 +58,69 @@ export const DashboardPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Daily Mission Brief (AI) */}
+      {isBriefLoading ? (
+        <div className="card mb-2" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem' }}>
+          <RefreshCw size={16} className="spin text-accent" />
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Generating Daily Mission Brief...</span>
+        </div>
+      ) : aiBrief && activeHabits.length > 0 ? (
+        <div 
+          className="card mb-2 ai-brief-card flex-center fade-in" 
+          style={{ 
+            borderTop: `2px solid ${getStatusColor(aiBrief.status)}`,
+            padding: '1.25rem 1rem',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Status Label Top Left */}
+          <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <CipherAvatar mood={aiBrief.status as any} size="sm" />
+            <div style={{ fontSize: '0.55rem', color: getStatusColor(aiBrief.status), fontWeight: 700, letterSpacing: '0.1em' }}>
+              [{aiBrief.status.toUpperCase()}]
+            </div>
+          </div>
+
+          
+          <div style={{ 
+            maxWidth: '600px', 
+            margin: '1.25rem auto 0 auto', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.75rem' 
+          }}>
+            <h2 style={{ 
+              fontFamily: 'Orbitron, sans-serif', 
+              fontSize: 'clamp(0.9rem, 2vw, 1.15rem)', 
+              fontWeight: 800, 
+              color: '#fff',
+              margin: 0,
+              lineHeight: 1.3,
+              letterSpacing: '0.01em',
+              textTransform: 'uppercase'
+            }}>
+              "{aiBrief.quote}"
+            </h2>
+            
+            <p style={{ 
+              fontSize: 'clamp(0.7rem, 1.2vw, 0.8rem)', 
+              color: 'var(--text-secondary)', 
+              lineHeight: 1.6, 
+              whiteSpace: 'pre-wrap', 
+              margin: 0,
+              fontWeight: 400
+            }}>
+              {aiBrief.motivation}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Stats Row */}
       <div className="stat-grid mb-2">
@@ -130,6 +221,8 @@ export const DashboardPage = () => {
           )}
         </div>
       </div>
+      
+      <AppFooter />
 
       {/* Add Habit Modal */}
       {showModal && <AddHabitModal onClose={() => setShowModal(false)} onAdd={addHabit} />}

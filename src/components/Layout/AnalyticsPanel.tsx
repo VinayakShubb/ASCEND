@@ -1,16 +1,45 @@
+import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { calculateDisciplineIndex, calculateDailyCompletion, calculateWeightedScore, getStreak } from '../../utils/calculations';
+import { getCoachInsight, type CoachOutput } from '../../utils/aiCoach';
 import { format, subDays, isBefore, startOfDay } from 'date-fns';
-import { Activity, Flame, Target, AlertTriangle } from 'lucide-react';
-
+import { Activity, Flame, Target, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CipherAvatar } from '../UI/CipherAvatar';
 export const AnalyticsPanel = () => {
   const { habits, logs } = useData();
+  const { user } = useAuth();
+  
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDate = startOfDay(new Date());
   
   const disciplineIndex = calculateDisciplineIndex(habits, logs);
   const dailyCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
   const activeHabits = habits.filter(h => !h.archived);
+  
+  const [aiInsight, setAiInsight] = useState<CoachOutput | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchInsight = async () => {
+      // User object from AuthProvider doesn't have an ID, so we use their username for caching
+      if (!user || activeHabits.length === 0) return;
+      setIsAiLoading(true);
+      const insight = await getCoachInsight(user.username, habits, logs);
+      setAiInsight(insight);
+      setIsAiLoading(false);
+    };
+    
+    fetchInsight();
+  }, [user, habits, logs, activeHabits.length]);
+
+  const handleRefreshAi = async () => {
+    if (!user || activeHabits.length === 0) return;
+    setIsAiLoading(true);
+    const insight = await getCoachInsight(user.username, habits, logs, true);
+    setAiInsight(insight);
+    setIsAiLoading(false);
+  };
   
   const habitStreaks = activeHabits.map(h => ({
     name: h.name,
@@ -58,6 +87,16 @@ export const AnalyticsPanel = () => {
   const radius = 65;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (disciplineIndex / 100) * circumference;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'elite': return '#00ff88';
+      case 'solid': return '#00cc66';
+      case 'slipping': return '#ffaa00';
+      case 'critical': return '#ff4444';
+      default: return 'var(--text-secondary)';
+    }
+  };
 
   return (
     <>
@@ -191,20 +230,87 @@ export const AnalyticsPanel = () => {
         </div>
       )}
 
-      {/* Insight */}
+      {/* Live AI Coach Insight */}
       <div>
-        <div className="analytics-section-title">System Analysis</div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.7, fontStyle: 'italic' }}>
-          {activeHabits.length === 0 
-            ? '» No active protocols. Initialize habits to begin.'
-            : disciplineIndex >= 80 
-              ? '» Peak efficiency. Maintain protocol.' 
-              : disciplineIndex >= 50 
-                ? '» Solid momentum. Push for consistency.' 
-                : disciplineIndex > 0 
-                  ? `» Building up. Current index: ${disciplineIndex}%. Complete today's protocols to climb.`
-                  : '» Fresh start. Complete protocols to generate your index.'}
-        </p>
+        <div className="analytics-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>System Analysis</span>
+          <button 
+            onClick={handleRefreshAi} 
+            disabled={isAiLoading || activeHabits.length === 0}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--text-muted)', 
+              cursor: (isAiLoading || activeHabits.length === 0) ? 'not-allowed' : 'pointer',
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              opacity: (isAiLoading || activeHabits.length === 0) ? 0.5 : 1
+            }}
+            title="Refresh Coach Insight"
+          >
+            <RefreshCw size={14} className={isAiLoading ? 'spin' : ''} />
+          </button>
+        </div>
+        
+        {isAiLoading ? (
+            <div className="card" style={{ padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem' }}>
+                <RefreshCw size={16} className="spin text-accent" />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Analyzing protocols...</span>
+            </div>
+        ) : aiInsight && activeHabits.length > 0 ? (
+            <div className="card" style={{ padding: '1rem', borderTop: `2px solid ${getStatusColor(aiInsight.status)}` }}>
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem', 
+                    marginBottom: '1rem',
+                    flexWrap: 'wrap' // allows mobile wrapping
+                }}>
+                    <div style={{ flexShrink: 0 }}>
+                        <CipherAvatar mood={aiInsight.status as any} size="md" />
+                    </div>
+                    <div style={{ flex: '1 1 min-content' }}>
+                        <div style={{ 
+                            fontSize: '0.65rem', 
+                            fontWeight: 700, 
+                            letterSpacing: '0.1em', 
+                            color: getStatusColor(aiInsight.status),
+                            textTransform: 'uppercase',
+                            marginBottom: '0.25rem'
+                        }}>
+                            [{aiInsight.status}]
+                        </div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', textTransform: 'uppercase', lineHeight: 1.3 }}>
+                            {aiInsight.headline}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                    {aiInsight.insight}
+                </div>
+                
+                <div style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.5rem 0.75rem', 
+                    background: 'rgba(0,0,0,0.2)', 
+                    borderRadius: '4px',
+                    borderLeft: '2px solid var(--accent-primary)'
+                }}>
+                    <strong style={{ color: 'var(--accent-primary)', marginRight: '0.5rem' }}>NOW →</strong>
+                    <span style={{ color: '#fff' }}>{aiInsight.action}</span>
+                </div>
+            </div>
+        ) : (
+            <div className="card" style={{ padding: '1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>
+                {activeHabits.length === 0 
+                    ? '» No active protocols. Initialize habits to begin analysis.'
+                    : '» Fresh start. Complete protocols to generate your index.'}
+                </p>
+            </div>
+        )}
       </div>
     </>
   );

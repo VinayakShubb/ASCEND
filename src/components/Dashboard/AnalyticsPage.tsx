@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { calculateWeightedScore, calculateDisciplineIndex, calculateDailyCompletion, getStreak } from '../../utils/calculations';
 import { format, subDays, addDays } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus, BarChart2, Target, Flame, Activity } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { PerformanceChart } from '../UI/PerformanceChart';
+import { AppFooter } from '../UI/AppFooter';
 
 export const AnalyticsPage = () => {
   const { habits, logs } = useData();
@@ -122,14 +123,6 @@ export const AnalyticsPage = () => {
   const disciplineIndex = calculateDisciplineIndex(habits, logs);
   const todayCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
 
-  const chartTooltipStyle = {
-    backgroundColor: 'var(--bg-secondary)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontSize: '0.75rem',
-    color: 'var(--text-primary)',
-  };
-
   return (
     <div className="page-container fade-in">
       <div className="page-header">
@@ -170,47 +163,7 @@ export const AnalyticsPage = () => {
       {/* 30-Day Trend Chart */}
       <div className="chart-container mb-2">
         <div className="card-title mb-1">30-Day Performance Trend</div>
-        <div style={{ width: '100%', height: 220 }}>
-          <ResponsiveContainer>
-            <AreaChart 
-              data={trendData}
-              margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="date" 
-                tick={{ fill: '#525252', fontSize: 10 }}
-                axisLine={{ stroke: '#333' }}
-                tickLine={false}
-                interval={6} 
-              />
-              <YAxis 
-                tick={{ fill: '#525252', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                domain={[0, 100]}
-              />
-              <Tooltip 
-                contentStyle={chartTooltipStyle}
-                formatter={(value) => [`${value}%`, 'Score']}
-              />
-              <Area
-                type="monotone"
-                dataKey="score"
-                stroke="var(--accent-primary)"
-                strokeWidth={2}
-                fill="url(#scoreGradient)"
-                dot={{ r: 4, strokeWidth: 0, fill: 'var(--accent-primary)' }}
-                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--accent-primary)' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <PerformanceChart data={trendData} />
       </div>
 
       {/* Detailed Per-Protocol Analysis */}
@@ -303,6 +256,8 @@ export const AnalyticsPage = () => {
           )}
         </div>
       </div>
+
+      <AppFooter />
     </div>
   );
 };

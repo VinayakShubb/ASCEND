@@ -1,0 +1,382 @@
+/* ═══════════════════════════════════════════════
+   LOGIC ENGINE PAGE STYLES
+   ═══════════════════════════════════════════════ */
+
+.le-page {
+  padding: 24px 0 80px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ─── Header ─── */
+.le-header {
+  margin-bottom: 40px;
+}
+.le-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+  transition: all 200ms;
+}
+.le-back-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+.le-header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.le-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(0,255,136,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+.le-header-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--accent-primary);
+  margin-bottom: 4px;
+}
+.le-header-title {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.le-header-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ─── Section Dividers ─── */
+.le-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  margin: 48px 0 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+/* ─── Metric Cards ─── */
+.le-metric-card, .le-multiplier-card, .le-cipher-card, .le-grace-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  border-left: 3px solid var(--accent-primary);
+}
+.le-metric-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.le-metric-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent-primary);
+  opacity: 0.25;
+  line-height: 1;
+}
+.le-metric-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+.le-metric-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.le-metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.le-metric-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+.le-metric-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Formula badge */
+.le-formula {
+  display: inline-block;
+  background: rgba(0,255,136,0.06);
+  border: 1px solid rgba(0,255,136,0.15);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent-primary);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Multiplier Grid ─── */
+.le-multiplier-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.le-multiplier-item {
+  border: 1px solid;
+  border-radius: 6px;
+  padding: 12px 8px;
+  text-align: center;
+  background: rgba(255,255,255,0.02);
+}
+.le-mult-level {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.le-mult-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* ─── Heatmap Demo ─── */
+.le-heatmap-demo {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.le-heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.le-heat-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.le-heat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* ─── Status Table ─── */
+.le-status-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.le-status-row {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr;
+  gap: 16px;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 14px 20px;
+  border-left: 3px solid;
+}
+.le-status-range {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.le-status-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.le-status-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ─── CIPHER Modes Grid ─── */
+.le-modes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.le-mode-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 20px 24px;
+  border-left: 3px solid;
+}
+
+/* ─── CIPHER Card ─── */
+.le-cipher-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.le-cipher-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding: 4px 0;
+}
+.le-step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent-primary);
+  opacity: 0.5;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.le-cipher-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bg-tertiary);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ─── Execution Types ─── */
+.le-types-grid {
+  margin-bottom: 24px;
+}
+.le-types-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.le-type-chip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.le-type-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  letter-spacing: 0.08em;
+}
+.le-type-quote {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  flex: 1;
+  min-width: 200px;
+  text-align: right;
+}
+
+/* ─── Grace Period Card ─── */
+.le-grace-card {
+  border-left-color: #00cc66;
+  margin-bottom: 40px;
+}
+
+/* ─── Footer ─── */
+.le-footer {
+  text-align: center;
+  padding-top: 40px;
+}
+.le-footer-line {
+  width: 60px;
+  height: 1px;
+  background: var(--bg-tertiary);
+  margin: 0 auto 20px;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLL ANIMATIONS
+   ═══════════════════════════════════════════════ */
+.le-animate {
+  opacity: 0;
+  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.le-slide-left {
+  transform: translateX(-40px);
+}
+.le-slide-right {
+  transform: translateX(40px);
+}
+.le-fade {
+  transform: translateY(20px);
+}
+.le-scale {
+  transform: scale(0.95);
+}
+
+/* Revealed state */
+.le-revealed {
+  opacity: 1 !important;
+  transform: translateX(0) translateY(0) scale(1) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .le-page { padding: 16px 0 60px; }
+  .le-multiplier-grid { grid-template-columns: repeat(2, 1fr); }
+  .le-status-row { grid-template-columns: 1fr; gap: 4px; }
+  .le-type-chip { flex-direction: column; align-items: flex-start; }
+  .le-type-quote { text-align: left; min-width: 0; }
+}

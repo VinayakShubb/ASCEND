@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, BarChart2, Settings, LogOut, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BarChart2, Settings, LogOut, Calendar, ChevronLeft, ChevronRight, Brain, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { Dispatch, SetStateAction } from 'react';
 import type { View } from '../../types';
@@ -18,9 +18,11 @@ export const Sidebar = ({ currentView, setView, collapsed, setCollapsed }: Sideb
     { id: 'habits' as View, label: 'Protocols', icon: CheckSquare },
     { id: 'calendar' as View, label: 'Calendar', icon: Calendar },
     { id: 'analytics' as View, label: 'Intelligence', icon: BarChart2 },
+    { id: 'cipher' as View, label: 'CIPHER Analysis', icon: Brain },
   ];
 
   const systemNav = [
+    { id: 'logic-engine' as View, label: 'Logic Engine', icon: BookOpen },
     { id: 'settings' as View, label: 'System Config', icon: Settings },
   ];
 

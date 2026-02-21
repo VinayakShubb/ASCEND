@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { LayoutDashboard, CheckSquare, BarChart2, Settings, Calendar, X, Activity, LogOut } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BarChart2, Settings, Calendar, X, Activity, LogOut, Brain, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { View } from '../../types';
 
@@ -30,11 +30,20 @@ export const MainLayout = ({ children, currentView, setView }: MainLayoutProps) 
     return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Reset scroll position when view changes
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo(0, 0);
+    }
+  }, [currentView]);
+
   const mainNav = [
     { id: 'dashboard' as View, label: 'Command Center', icon: LayoutDashboard },
     { id: 'habits' as View, label: 'Protocol Registry', icon: CheckSquare },
     { id: 'calendar' as View, label: 'Calendar', icon: Calendar },
     { id: 'analytics' as View, label: 'Intelligence', icon: BarChart2 },
+    { id: 'cipher' as View, label: 'CIPHER Analysis', icon: Brain },
+    { id: 'logic-engine' as View, label: 'Logic Engine', icon: BookOpen },
     { id: 'settings' as View, label: 'System Config', icon: Settings },
   ];
 

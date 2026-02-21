@@ -1,0 +1,109 @@
+.cipher-robot {
+  --eye-color: var(--accent-primary);
+  --eye-glow: var(--accent-glow);
+}
+
+.cipher-robot.elite {
+  --eye-size: 8px;
+  --eye-intensity: 1.0;
+}
+
+.cipher-robot.solid {
+  --eye-size: 7px;
+  --eye-intensity: 0.7;
+}
+
+.cipher-robot.slipping {
+  --eye-size: 6px;
+  --eye-intensity: 0.6;
+}
+
+.cipher-robot.critical {
+  --eye-size: 8px;
+  --eye-intensity: 1.2;
+}
+
+.cipher-body {
+  fill: none;
+  stroke: var(--text-secondary, #2a2a2a);
+  stroke-width: 2;
+}
+
+.cipher-antenna {
+  stroke: var(--text-secondary, #2a2a2a);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.cipher-antenna-tip {
+  fill: var(--eye-color);
+  filter: drop-shadow(0 0 4px var(--eye-glow));
+}
+
+.cipher-eye {
+  fill: var(--eye-color);
+  filter: drop-shadow(0 0 calc(var(--eye-intensity) * 8px) var(--eye-glow));
+  transition: all 0.3s ease;
+}
+
+.cipher-eyebrow {
+  stroke: var(--eye-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ELITE: Sharp confident brows */
+.cipher-robot.elite .eyebrow-left {
+  d: path("M 32 27 L 42 24");
+  animation: elite-pulse 3s ease-in-out infinite;
+}
+.cipher-robot.elite .eyebrow-right {
+  d: path("M 58 24 L 68 27");
+  animation: elite-pulse 3s ease-in-out infinite;
+}
+
+/* SOLID: Intense straight brows */
+.cipher-robot.solid .eyebrow-left {
+  d: path("M 32 27 L 42 27");
+}
+.cipher-robot.solid .eyebrow-right {
+  d: path("M 58 27 L 68 27");
+}
+
+/* SLIPPING: Angry furrowed brows */
+.cipher-robot.slipping .eyebrow-left {
+  d: path("M 32 30 L 42 25");
+  animation: stern-twitch 1.5s ease-in-out infinite;
+}
+.cipher-robot.slipping .eyebrow-right {
+  d: path("M 58 25 L 68 30");
+  animation: stern-twitch 1.5s ease-in-out infinite;
+}
+
+/* CRITICAL: Extreme aggressive angle */
+.cipher-robot.critical .eyebrow-left {
+  d: path("M 32 32 L 42 24");
+  animation: rage-shake 0.5s ease-in-out infinite;
+}
+.cipher-robot.critical .eyebrow-right {
+  d: path("M 58 24 L 68 32");
+  animation: rage-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes elite-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes stern-twitch {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.5px); }
+}
+
+@keyframes rage-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1.5px); }
+  75% { transform: translateX(1.5px); }
+}

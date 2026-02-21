@@ -1,0 +1,69 @@
+/* cipherAvatar.css */
+
+.cipher-avatar {
+  overflow: visible;
+}
+
+/* Feature transitions */
+.cipher-feature {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Blinking */
+@keyframes randomBlink {
+  0%, 96%, 100% { transform: scaleY(1); }
+  98% { transform: scaleY(0.1); }
+}
+
+.cipher-eyes-blink {
+  transform-origin: 50% 40px;
+  animation: randomBlink 4s infinite;
+}
+
+/* --- MOOD ANIMATIONS --- */
+
+/* ELITE: subtle opacity pulse */
+@keyframes elitePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+.anim-elite .cipher-face {
+  animation: elitePulse 3s infinite ease-in-out;
+}
+
+/* SLIPPING: angry twitch */
+@keyframes slipTwitch {
+  0%, 95%, 100% { transform: translateY(0); }
+  97.5% { transform: translateY(-0.5px); }
+}
+.anim-slipping .cipher-head-group {
+  animation: slipTwitch 1.5s infinite;
+}
+
+/* CRITICAL: rage shake */
+@keyframes rageShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1.5px, 0.5px); }
+  50% { transform: translate(1.5px, -0.5px); }
+  75% { transform: translate(-0.5px, 1.5px); }
+}
+.anim-critical .cipher-head-group {
+  animation: rageShake 0.5s infinite ease-in-out;
+}
+
+/* ANALYZING: scan */
+@keyframes eyeScan {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.anim-analyzing .cipher-eyes-blink {
+  animation: eyeScan 2s infinite ease-in-out, randomBlink 4s infinite;
+}
+.anim-analyzing .cipher-eye-path {
+  animation: glowPulse 1.5s infinite ease-in-out;
+}

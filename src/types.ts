@@ -2,7 +2,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme';
 
 export type Frequency = 'daily' | 'weekly' | 'custom';
 
-export type View = 'about' | 'dashboard' | 'habits' | 'calendar' | 'analytics' | 'settings';
+export type View = 'about' | 'dashboard' | 'habits' | 'calendar' | 'analytics' | 'cipher' | 'settings' | 'logic-engine';
 
 export interface User {
   username: string; // Always SHUB

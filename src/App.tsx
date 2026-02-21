@@ -7,10 +7,12 @@ import { DashboardPage } from './components/Dashboard/DashboardPage';
 import { HabitsPage } from './components/Dashboard/HabitsPage';
 import { CalendarPage } from './components/Dashboard/CalendarPage';
 import { AnalyticsPage } from './components/Dashboard/AnalyticsPage';
+import { CipherPage } from './components/Dashboard/CipherPage';
 import { SettingsPage } from './components/Dashboard/SettingsPage';
+import { LogicEnginePage } from './components/Dashboard/LogicEnginePage';
 import type { View } from './types';
 
-const VALID_VIEWS: View[] = ['about', 'dashboard', 'habits', 'calendar', 'analytics', 'settings'];
+const VALID_VIEWS: View[] = ['about', 'dashboard', 'habits', 'calendar', 'analytics', 'cipher', 'settings', 'logic-engine'];
 
 function getViewFromPath(): View {
   const hash = window.location.hash.replace('#', '');
@@ -74,8 +76,12 @@ function App() {
         return <CalendarPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'cipher':
+        return <CipherPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'logic-engine':
+        return <LogicEnginePage setView={navigateTo} />;
       default:
         return <AboutPage setView={navigateTo} />;
     }

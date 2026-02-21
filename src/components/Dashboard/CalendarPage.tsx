@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO, addYears } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { calculateDailyCompletion } from '../../utils/calculations';
+import { AppFooter } from '../UI/AppFooter';
 
 export const CalendarPage = () => {
   const { habits, logs, toggleHabitCompletion, getHabitStatus } = useData();
@@ -292,6 +293,8 @@ export const CalendarPage = () => {
           </div>
         </div>
       )}
+
+      <AppFooter />
     </div>
   );
 };

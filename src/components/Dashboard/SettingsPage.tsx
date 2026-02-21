@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Palette, Shield, Database, Trash2, Download, Upload } from 'lucide-react';
 import { storage } from '../../utils/storage';
+import { AppFooter } from '../UI/AppFooter';
 
 export const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
@@ -176,6 +177,8 @@ export const SettingsPage = () => {
           <Shield size={14} /> Disconnect System
         </button>
       </div>
+
+      <AppFooter />
     </div>
   );
 };
