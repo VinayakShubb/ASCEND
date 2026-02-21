@@ -1,14 +1,14 @@
 # ASCEND // PERSONAL EVOLUTION SYSTEM
-### Architect: VINAYAK // ShubV
+### Architect: VINAYAK // SHUBV
 
-ASCEND is a proprietary, cloud-native discipline quantification engine. Unlike passive habit trackers, ASCEND is an active feedback system designed to measure personal consistency against calibrated difficulty.
+ASCEND is a futuristic, AI-driven **habit tracker** and performance architecture that transforms your personal discipline into a quantified optimization problem. Unlike passive trackers, ASCEND is an active feedback system designed to measure personal consistency, identify execution gaps via the CIPHER analyst, and accelerate your evolution.
 
 ---
 
 ## 1. System Philosophy
 
 The core thesis of ASCEND is that **discipline is measurable**. 
-By assigning difficulty multipliers to every action, the system normalizes output across different domains (physical, intellectual, creative). A "perfect day" isn't about checking boxes—it's about maximizing your **Discipline Index**.
+By assigning difficulty multipliers to every action, the system normalizes output across different domains (physical, intellectual, creative). A "perfect day" isn't about checking boxes—it's about maximizing your **Discipline Index (DI)**.
 
 ### The Discipline Index Algorithm
 Your Discipline Index (0-100) is a rolling 7-day weighted average calculated as:
@@ -21,7 +21,7 @@ Where:
 - **Daily Score** = (Sum of Completed Protocol Difficulties) / (Sum of Active Protocol Difficulties)
 - **Weight** = Recency factor (yesterday matters more than 7 days ago)
 
-This math ensures that consistency is the only way to maintain a high score. One missed day causes a sharp drop, requiring multiple perfect days to recover.
+Consistency is the only path to a high DI. A single missed day causes a sharp decay, requiring multiple perfect executions to recover momentum.
 
 ---
 
@@ -38,44 +38,56 @@ Daily operations are defined as **Protocols**, not tasks.
 
 ### 📊 Command Center (Dashboard)
 The daily interface is designed for **focus and immediacy**.
-- **Haptic-Visual Feedback**: ONE-TAP completion with instant state updates.
-- **Attention System**: Automatically flags protocols with falling completion rates (<80%).
-- **Current Streak Display**: Real-time counter of consecutive executions.
+- **Execution Status**: Real-time tracking of today's protocols and completion percentages.
+- **Daily Mission Brief**: AI-generated summary of your objectives and current status.
+- **Dynamic Feedback**: Visual alerts when protocols fall below critical completion thresholds.
 
-### 🧠 Intelligence Engine (Analytics)
-Data visualization for behavioral patterns.
-- **GitHub-Style Heatmap**: A 12-month grid visualization of discipline intensity (Theme Adaptive).
-- **Consistency Delats**: Tracks week-over-week performance changes.
-- **30-Day Trendline**: Visualizes momentum shifts.
+### 🧠 CIPHER Intelligence Analyst
+An active AI performance coach powered by Llama 3 (Groq).
+- **Behavioral Analysis**: CIPHER reads your execution history to identify personality types (e.g., "Consistent Builder" vs "Burst Executor").
+- **Autopsy Engine**: Detects "dead streaks" and pinpoint your single biggest execution mistake.
+- **The Three Orders**: Ranked instructions generated every midnight to optimize your next 24 hours.
 
-### 🔐 Identity & Security
-- **Cloud-Native**: Powered by a Supabase backend for cross-device synchronization.
-- **Row Level Security (RLS)**: Database policies ensure zero data leakage between users.
-- **Encrypted Auth**: Secure password hashing via bcrypt.
+### � Logic Engine
+The technical and philosophical documentation hub.
+- **Protocol breakdown**: Detailed explanation of how the Discipline Index is calculated.
+- **Avatar Calibration**: Breakdown of the CIPHER AI moods (Elite, Solid, Slipping, Critical) and their DI triggers.
+- **System Rules**: The laws governing the ASCEND architecture.
 
 ---
 
-## 3. Technical Architecture
+## 3. Visual Identity
+
+### 🤖 CIPHER Avatar
+The face of the system is a blocky, pixel-art robot with reactive LED eyes.
+- **Mood-Responsive**: The avatar's expression and glow shift based on your current DI.
+- **Blinking Logic**: Occasional haptic-eye animations to give the AI a sense of "presence."
+- **Evolutionary States**:
+  - **Elite (80-100 DI)**: Green glow, happy smile, relaxed eyebrows.
+  - **Critical (0-30 DI)**: Red glow, intense focus, aggressive stance.
+
+### 🌌 Obsidian Glass Design
+- **Palette**: Deep Black (#000000), Void (#0a0a0a), and Neon Accents.
+- **Materials**: Glassmorphism (`backdrop-filter: blur(20px)`) applied to all core panels.
+- **Typography**: `Orbitron` for titles, `JetBrains Mono` for data, `Inter` for interface.
+- **Global Branding**: Persistent footer across all pages identifying the system version and architect.
+
+---
+
+## 4. Technical Architecture
 
 ### Frontend (Interface)
 - **Framework**: React 18 + TypeScript + Vite
-- **State Management**: Context API + Optimistic UI Updates
-- **Design System**: Custom "Obsidian" Theme (CSS Variables)
+- **Routing**: Internal state-based navigation with automatic scroll-restoration.
+- **Deployment**: CI/CD pipeline integrated with GitHub and Vercel.
 
 ### Backend (Infrastructure)
 - **Database**: PostgreSQL (Supabase)
 - **Auth**: Supabase Auth (JWT Tokens)
-- **Realtime**: WebSocket subscriptions for instant sync
+- **AI Integration**: Groq API (Llama 3.1) for high-speed inference.
 
 ---
-
-## 4. Visual Language
-**"Obsidian Glass"**
-- **Palette**: Deep Black (#000000), Void (#0a0a0a), and Neon Accents.
-- **Materials**: Glassmorphism (`backdrop-filter: blur(20px)`) for depth.
-- **Typography**: `JetBrains Mono` for data, `Inter` for interface.
-
----
-**STATUS: OPERATIONAL**
-**VERSION: 2.1.0**
-**ACCESS: PRIVATE // SINGLE-USER**
+**STATUS: OPERATIONAL**  
+**VERSION: 3.0.0**  
+**ARCHITECT: VINAYAK // SHUBV**  
+**DEPLOYMENT: GLOBAL // VERCEL**
