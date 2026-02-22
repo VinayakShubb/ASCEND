@@ -105,14 +105,14 @@ export const Login = () => {
     setLoading(false);
   };
 
-  const moodLabels: Partial<Record<CipherMood, { label: string; color: string; desc: string }>> & Record<'elite' | 'solid' | 'slipping' | 'critical', { label: string; color: string; desc: string }> = {
+  const moodLabels: Record<'elite' | 'solid' | 'slipping' | 'critical', { label: string; color: string; desc: string }> = {
     elite: { label: 'ELITE', color: '#00ff88', desc: 'Top-tier execution. CIPHER approves.' },
     solid: { label: 'SOLID', color: '#00cc66', desc: 'Consistent discipline. Keep pushing.' },
     slipping: { label: 'SLIPPING', color: '#ffaa00', desc: 'Performance declining. Intervention needed.' },
     critical: { label: 'CRITICAL', color: '#ff4444', desc: 'System failure. Immediate course correction.' },
   };
 
-  const currentMood = moods[moodIndex];
+  const currentMood = moods[moodIndex] as 'elite' | 'solid' | 'slipping' | 'critical';
 
   return (
     <div className="login-page split-layout">
@@ -261,16 +261,20 @@ export const Login = () => {
               </p>
               {/* Mood indicator bar */}
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem' }}>
-                {moods.map((m, i) => (
-                  <div key={m} style={{
-                    flex: 1,
-                    height: 4,
-                    borderRadius: 2,
-                    background: i === moodIndex ? moodLabels[m].color : 'rgba(255,255,255,0.08)',
-                    boxShadow: i === moodIndex ? `0 0 8px ${moodLabels[m].color}` : 'none',
-                    transition: 'all 0.5s ease'
-                  }}></div>
-                ))}
+                {moods.map((m, i) => {
+                  const moodKey = m as 'elite' | 'solid' | 'slipping' | 'critical';
+                  const label = moodLabels[moodKey];
+                  return (
+                    <div key={m} style={{
+                      flex: 1,
+                      height: 4,
+                      borderRadius: 2,
+                      background: i === moodIndex ? label.color : 'rgba(255,255,255,0.08)',
+                      boxShadow: i === moodIndex ? `0 0 8px ${label.color}` : 'none',
+                      transition: 'all 0.5s ease'
+                    }}></div>
+                  );
+                })}
               </div>
             </div>
           </div>
