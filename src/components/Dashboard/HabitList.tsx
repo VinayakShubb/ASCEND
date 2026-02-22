@@ -36,7 +36,7 @@ const HabitItem = ({ habit, isCompleted, onToggle, onDelete }: {
       alignItems: 'center',
       justifyContent: 'space-between',
       borderLeft: `2px solid ${optimisticCompleted ? 'var(--accent-primary)' : 'transparent'}`,
-      transition: 'all 0.2s ease',
+      transition: 'none',
       opacity: optimisticCompleted ? 0.6 : 1
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -46,13 +46,14 @@ const HabitItem = ({ habit, isCompleted, onToggle, onDelete }: {
             width: '24px',
             height: '24px',
             border: `1px solid ${optimisticCompleted ? 'var(--accent-primary)' : 'var(--text-muted)'}`,
-            borderRadius: '2px',
+            borderRadius: '0px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: optimisticCompleted ? 'rgba(var(--accent-primary), 0.1)' : 'transparent',
             color: 'var(--accent-primary)',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            transition: 'none'
           }}
         >
           {optimisticCompleted && <Check size={16} />}

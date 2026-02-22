@@ -67,7 +67,7 @@ function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'about':
-        return <AboutPage setView={navigateTo} />;
+        return <AboutPage setView={navigateTo} isAuthenticated={true} />;
       case 'dashboard':
         return <DashboardPage />;
       case 'habits':
@@ -83,7 +83,7 @@ function App() {
       case 'logic-engine':
         return <LogicEnginePage setView={navigateTo} />;
       default:
-        return <AboutPage setView={navigateTo} />;
+        return <AboutPage setView={navigateTo} isAuthenticated={true} />;
     }
   };
 

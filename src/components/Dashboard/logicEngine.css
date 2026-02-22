@@ -3,9 +3,21 @@
    ═══════════════════════════════════════════════ */
 
 .le-page {
-  padding: 24px 0 80px;
+  padding: 32px 32px 80px; /* Base padding */
   max-width: 720px;
   margin: 0 auto;
+  box-sizing: border-box; /* Crucial so padding doesn't push width out */
+}
+
+@media (max-width: 768px) {
+  .le-page {
+    padding: 24px 24px 80px;
+  }
+}
+@media (max-width: 480px) {
+  .le-page {
+    padding: 20px 20px 80px;
+  }
 }
 
 /* ─── Header ─── */
@@ -374,7 +386,7 @@
    MOBILE
    ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .le-page { padding: 16px 0 60px; }
+  .le-page { padding: 24px 24px 60px; }
   .le-multiplier-grid { grid-template-columns: repeat(2, 1fr); }
   .le-status-row { grid-template-columns: 1fr; gap: 4px; }
   .le-type-chip { flex-direction: column; align-items: flex-start; }

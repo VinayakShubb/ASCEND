@@ -522,6 +522,18 @@ body {
   flex-direction: column;
 }
 
+/* Global Mobile Padding for all pages */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1.5rem 24px 0; /* Increased to 24px on sides */
+  }
+}
+@media (max-width: 480px) {
+  .page-container {
+    padding: 1.25rem 20px 0; /* Increased to 20px on sides to prevent edge sticking */
+  }
+}
+
 .page-header { margin-bottom: 2rem; }
 
 .page-title {
@@ -773,14 +785,26 @@ body {
    ═══════════════════════════════════════════ */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: blur(12px);
+  transform: translateY(40px) scale(0.95);
+  transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+              filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity, transform, filter;
 }
 
 .scroll-reveal.revealed {
-  opacity: 1;
-  transform: translateY(0);
+  opacity: 1 !important;
+  filter: blur(0px) !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Override all directional variants to just use the center fade */
+.scroll-reveal.slide-left,
+.scroll-reveal.slide-right,
+.scroll-reveal.scale-in,
+.scroll-reveal.fade-in {
+  transform: translateY(40px) scale(0.95);
 }
 
 /* Stagger children inside scroll-reveal containers */
@@ -974,8 +998,8 @@ body {
 
 /* ─── CIPHER Intro Section ─── */
 .cipher-intro-section {
-  background: linear-gradient(135deg, rgba(0,255,136,0.03) 0%, rgba(0,0,0,0) 100%);
-  border: 1px solid rgba(0,255,136,0.12);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 3%, transparent) 0%, transparent 100%);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 12%, transparent);
   border-radius: 12px;
   padding: 48px 40px;
   margin: 0 auto 0;
@@ -996,7 +1020,7 @@ body {
 .cipher-avatar-glow {
   position: absolute;
   inset: -24px;
-  background: radial-gradient(circle, rgba(0,255,136,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
   border-radius: 50%;
   animation: cipher-pulse-glow 3s ease-in-out infinite;
   pointer-events: none;
@@ -1012,8 +1036,8 @@ body {
 }
 .cipher-hcard:hover {
   transform: translateY(-6px) scale(1.01);
-  border-color: rgba(0,255,136,0.3) !important;
-  box-shadow: 0 12px 32px rgba(0,255,136,0.12);
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent) !important;
+  box-shadow: 0 12px 32px var(--accent-glow);
 }
 
 /* ─── AI Features Section ─── */
@@ -1210,12 +1234,12 @@ body {
 
 .habit-check {
   width: 22px; height: 22px;
-  border-radius: 6px;
+  border-radius: 0px;
   border: 2px solid var(--border-color);
   background: transparent;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: none;
   flex-shrink: 0;
   color: var(--bg-primary);
 }
@@ -1824,14 +1848,111 @@ body {
 /* ═══════════════════════════════════════════
    LOGIN PAGE
    ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   LOGIN PAGE (SPLIT SCREEN V2)
+   ═══════════════════════════════════════════ */
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page.split-layout {
+  flex-direction: row;
+}
+
+.login-page.split-layout {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.login-info-panel {
+  flex: 1.2;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(8,8,8,1) 0%, rgba(13,13,13,1) 100%);
+  border-right: 1px solid var(--border-color);
+  padding: 6rem 4rem;
+  overflow-y: auto; /* Independent scroll for left side */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for cleaner look on left side */
+.login-info-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.login-info-panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.info-content {
+  position: relative;
+  z-index: 10;
+  max-width: 450px;
+  width: 100%;
+  animation: fadeInLeft 0.8s ease both;
+  margin-top: 4rem;
+}
+
+.info-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.info-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 4rem;
+  line-height: 1.6;
+}
+
+.info-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.info-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.info-feature h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.info-feature p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.login-form-panel {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-primary);
   position: relative;
-  overflow-y: auto;
-  padding: 1rem;
+  max-width: 600px;
+  width: 100%;
+  padding: 2rem;
+  height: 100%; /* Fix height to viewport */
+  overflow: hidden; /* Prevent scrolling on the right side */
 }
 
 .login-grid {
@@ -1845,17 +1966,56 @@ body {
 }
 
 .login-card {
-  background: rgba(26, 26, 26, 0.9);
-  border: 1px solid var(--border-color);
+  background: rgba(18, 18, 18, 0.95);
+  border: none;
   border-radius: 20px;
   padding: 2.5rem 2rem;
   width: 100%;
-  max-width: 380px;
+  max-width: none; /* Inherits constraints from login-card-glow-wrapper */
   text-align: center;
   animation: scaleIn 0.4s ease both;
   backdrop-filter: blur(20px);
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+/* ─── Glowing Border Train Wrapper ─── */
+.login-card-glow-wrapper {
+  position: relative;
+  border-radius: 22px;
+  padding: 2px;
+  max-width: 384px;
+  width: 100%;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    transparent 25%,
+    var(--accent-primary) 30%,
+    var(--accent-glow) 35%,
+    transparent 40%,
+    transparent 100%
+  );
+  animation: borderTrain 8s linear infinite;
+}
+
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes borderTrain {
+  from { --glow-angle: 0deg; }
+  to { --glow-angle: 360deg; }
+}
+
+/* Fallback for browsers that don't support @property */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+  .login-card-glow-wrapper {
+    border: 1px solid var(--accent-primary);
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-glow);
+    animation: glowPulse 3s ease-in-out infinite;
+  }
 }
 
 .login-logo {
@@ -1894,16 +2054,355 @@ body {
   background: var(--bg-secondary);
 }
 
+/* ─── Login Hero Section (Centered, Full Viewport) ─── */
+.login-hero-section {
+  min-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+/* ─── Glowing ASCEND Title ─── */
+.login-glow-title {
+  font-size: clamp(3.5rem, 8vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  text-align: center;
+  text-shadow:
+    0 0 10px var(--accent-glow),
+    0 0 30px var(--accent-glow),
+    0 0 60px var(--accent-glow);
+  animation: textGlow 4s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px var(--accent-glow),
+      0 0 30px var(--accent-glow),
+      0 0 60px var(--accent-glow);
+  }
+  50% {
+    text-shadow:
+      0 0 20px var(--accent-glow),
+      0 0 50px var(--accent-glow),
+      0 0 100px var(--accent-glow),
+      0 0 150px var(--accent-glow);
+  }
+}
+
+/* ─── Scroll Indicator V2 (Pulse Line + Bouncing Chevrons) ─── */
+.login-scroll-indicator-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 3rem 0 2rem;
+  color: var(--text-muted);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.scroll-pulse-line {
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--accent-primary), transparent);
+  animation: pulseLineScroll 2s ease-in-out infinite;
+  border-radius: 1px;
+}
+
+@keyframes pulseLineScroll {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleY(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.scroll-bounce-chevron {
+  animation: bounceChevy 2s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes bounceChevy {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(6px); opacity: 0.8; }
+}
+
+/* ─── Info Section Blocks ─── */
+.info-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.info-section {
+  margin-bottom: 3.5rem;
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.info-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 0.75rem;
+}
+
+.info-section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.info-section-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+.info-section-desc strong {
+  color: var(--text-primary);
+}
+
+.info-section-desc code {
+  background: rgba(255,255,255,0.06);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-primary);
+}
+
+/* ─── Mock UI Cards ─── */
+.mock-ui-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  text-align: left;
+  width: 100%;
+  max-width: 600px;
+}
+
+.cipher-mood-showcase {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+.cipher-mood-showcase > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem;
+}
+
+.mock-habit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.mock-habit-row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.mock-habit-row + .mock-habit-row {
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.mock-habit-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mock-checkbox {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 0px;
+  flex-shrink: 0;
+  transition: none;
+}
+
+.mock-checkbox.checked {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.mock-difficulty {
+  font-size: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.mock-difficulty.extreme {
+  color: #ff4444;
+  border: 1px solid rgba(255,68,68,0.3);
+  background: rgba(255,68,68,0.05);
+}
+
+.mock-difficulty.hard {
+  color: #ffaa00;
+  border: 1px solid rgba(255,170,0,0.3);
+  background: rgba(255,170,0,0.05);
+}
+
+.mock-difficulty.easy {
+  color: #00ff88;
+  border: 1px solid rgba(0,255,136,0.3);
+  background: rgba(0,255,136,0.05);
+}
+
+/* ─── CIPHER Mood Showcase ─── */
+.cipher-mood-showcase {
+  padding: 1.5rem !important;
+}
+
 /* Mobile login adjustments */
+@media (max-width: 960px) {
+  /* Override body/html/root overflow to allow page scroll on mobile login */
+  html:has(.login-page),
+  html:has(.login-page) body,
+  html:has(.login-page) #root {
+    overflow: visible !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+    background: linear-gradient(135deg, rgba(8,8,8,1) 0%, rgba(13,13,13,1) 100%);
+  }
+  .login-page,
+  .login-page.split-layout {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100vh;
+    flex-direction: column !important;
+    background: transparent;
+  }
+  .login-info-panel {
+    flex: 1 0 auto; /* Ensure it grows to fill any remaining void space */
+    overflow-y: visible !important;
+    padding: 0 1.75rem; /* Removed top padding that was pushing content down */
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    height: auto !important;
+    min-height: auto;
+    background: transparent; /* Inherits the sleek gradient from html/#root */
+    order: 1;
+  }
+  .info-content {
+    margin-top: 0 !important; /* Removed global 4rem margin to allow true centering */
+  }
+  .login-hero-section {
+    min-height: 100vh; /* changed from 90vh to 100vh for perfect vertical centering */
+    margin-bottom: 2rem;
+  }
+  .desktop-footer {
+    display: none !important;
+  }
+  .mobile-footer {
+    display: block !important;
+  }
+  .login-glow-title {
+    font-size: 3rem !important;
+  }
+  .info-section-title {
+    font-size: 1.5rem;
+  }
+  .login-form-panel {
+    max-width: 100%;
+    flex: 1 0 auto; /* Flex grow to stretch if needed */
+    padding: 3rem 1.75rem;
+    height: auto !important;
+    min-height: 100vh; /* Make sure the login card zone takes full screen initially */
+    overflow: visible !important;
+    order: 2;
+    box-sizing: border-box;
+    background: rgba(13, 13, 13, 0.95); /* Provide solid background base for the form section */
+  }
+  .login-card-glow-wrapper {
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .scroll-reveal.slide-left {
+    transform: translateX(-40px) rotate(0deg);
+  }
+  .scroll-reveal.slide-right {
+    transform: translateX(40px) rotate(0deg);
+  }
+}
+
 @media (max-width: 480px) {
+  .login-info-panel {
+    padding: 2.5rem 1.5rem;
+    box-sizing: border-box;
+  }
+  .login-form-panel {
+    padding: 2rem 1.25rem;
+    box-sizing: border-box;
+    max-width: 100vw;
+  }
   .login-card {
     padding: 2rem 1.5rem;
     border-radius: 16px;
-    margin: 0.5rem;
+  }
+  .login-card-glow-wrapper {
+    border-radius: 18px;
   }
   .login-logo {
     width: 40px; height: 40px;
     margin-bottom: 1rem;
   }
+
+  .login-glow-title {
+    font-size: 2.5rem !important;
+  }
+  .mock-habit-row {
+    padding: 0.5rem 0.5rem;
+  }
+  .mock-difficulty {
+    font-size: 0.5rem;
+    padding: 2px 5px;
+  }
 }
+
+.mobile-footer {
+  display: none;
+}
+
 

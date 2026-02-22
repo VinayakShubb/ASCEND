@@ -5,6 +5,8 @@ import type { View } from '../../types';
 
 interface AboutPageProps {
   setView: (view: View) => void;
+  isAuthenticated?: boolean;
+  onLoginClick?: () => void;
 }
 
 /* Intersection Observer hook for scroll-reveal — re-triggers on every scroll */
@@ -37,7 +39,7 @@ const useScrollReveal = () => {
   return ref;
 };
 
-export const AboutPage = ({ setView }: AboutPageProps) => {
+export const AboutPage = ({ setView, isAuthenticated = true, onLoginClick }: AboutPageProps) => {
   const scrollRef = useScrollReveal();
 
   /* Cycling CIPHER avatar mood */
@@ -137,9 +139,15 @@ export const AboutPage = ({ setView }: AboutPageProps) => {
           </p>
 
           <div className="landing-cta-group">
-            <button className="landing-cta landing-cta-primary" onClick={() => setView('dashboard')}>
-              <Zap size={16} /> Enter Command Center
-            </button>
+            {isAuthenticated ? (
+              <button className="landing-cta landing-cta-primary" onClick={() => setView('dashboard')}>
+                <Zap size={16} /> Enter Command Center
+              </button>
+            ) : (
+              <button className="landing-cta landing-cta-primary" onClick={onLoginClick}>
+                <Zap size={16} /> Login / Register
+              </button>
+            )}
             <button className="landing-cta landing-cta-secondary" onClick={() => {
               document.querySelector('.cipher-intro-section')?.scrollIntoView({ behavior: 'smooth' });
             }}>
@@ -168,8 +176,8 @@ export const AboutPage = ({ setView }: AboutPageProps) => {
           </div>
           <div className="cipher-intro-text">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Zap size={16} color="#00ff88" />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: '0.15em', color: '#00ff88', fontWeight: 700 }}>MEET CIPHER</span>
+              <Zap size={16} style={{ color: 'var(--accent-primary)' }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: '0.15em', color: 'var(--accent-primary)', fontWeight: 700 }}>MEET CIPHER</span>
             </div>
             <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.6rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px', lineHeight: 1.3 }}>
               Your AI Performance Analyst
@@ -187,7 +195,7 @@ export const AboutPage = ({ setView }: AboutPageProps) => {
                 'Brutally honest. Zero fluff. Uses your actual numbers.',
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <span style={{ color: '#00ff88', fontWeight: 700, flexShrink: 0 }}>•</span>
+                  <span style={{ color: 'var(--accent-primary)', fontWeight: 700, flexShrink: 0 }}>•</span>
                   {item}
                 </div>
               ))}
@@ -275,16 +283,24 @@ export const AboutPage = ({ setView }: AboutPageProps) => {
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em' }}>
           CIPHER is waiting. Your protocols are ready. Start building your system.
         </p>
-        <button className="landing-cta landing-cta-primary" onClick={() => setView('dashboard')} style={{ marginTop: '1rem' }}>
-          <Zap size={16} /> Launch System <ArrowRight size={16} />
-        </button>
-        <div style={{ marginTop: 24, display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'center' }}>
-          <button
-            onClick={() => setView('logic-engine')}
-            style={{ background: 'none', border: '1px solid var(--bg-tertiary)', color: 'var(--text-muted)', fontSize: 11, padding: '6px 16px', borderRadius: 4, cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <BookOpen size={12} /> LOGIC ENGINE
+        {isAuthenticated ? (
+          <button className="landing-cta landing-cta-primary" onClick={() => setView('dashboard')} style={{ marginTop: '1rem' }}>
+            <Zap size={16} /> Launch System <ArrowRight size={16} />
           </button>
+        ) : (
+          <button className="landing-cta landing-cta-primary" onClick={onLoginClick} style={{ marginTop: '1rem' }}>
+            <Zap size={16} /> Login / Register <ArrowRight size={16} />
+          </button>
+        )}
+        <div style={{ marginTop: 24, display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'center' }}>
+          {isAuthenticated && (
+            <button
+              onClick={() => setView('logic-engine')}
+              style={{ background: 'none', border: '1px solid var(--bg-tertiary)', color: 'var(--text-muted)', fontSize: 11, padding: '6px 16px', borderRadius: 4, cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <BookOpen size={12} /> LOGIC ENGINE
+            </button>
+          )}
         </div>
         <p className="landing-footer-credit" style={{ textTransform: 'uppercase' }}>
           ASCEND © 2026 • Built by VINAYAK // ShubV
