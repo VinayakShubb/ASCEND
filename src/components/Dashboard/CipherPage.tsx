@@ -8,7 +8,7 @@ import { calculateDisciplineIndex, calculateWeightedScore } from '../../utils/ca
 import { CipherAvatar } from '../UI/CipherAvatar';
 import { CipherRing } from '../UI/CipherRing';
 import { RefreshCw, Play, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import './cipherAnimations.css';
 import { AppFooter } from '../UI/AppFooter';
 
@@ -141,7 +141,7 @@ export const CipherPage = () => {
   useEffect(() => {
     if (!user || activeHabits.length === 0) return;
     const dateStr = new Date().toDateString();
-    const cacheKey = `ascend_ai_cipher_v3_${user.username}_${dateStr}`;
+    const cacheKey = `ascend_ai_cipher_v4_${user.username}_${dateStr}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
@@ -244,13 +244,19 @@ export const CipherPage = () => {
     return h ? h.totalCompletions : 0;
   };
 
-  const getTimelineDotColor = (key: string, idx: number, total: number): string => {
-    if (idx === 0) return 'var(--accent-primary)'; // registration = milestone
-    if (idx === total - 1) return 'var(--accent-primary)'; // today = milestone
-    const lk = key.toLowerCase();
-    if (lk.includes('dead') || lk.includes('drop') || lk.includes('worst') || lk.includes('collapse')) return '#ff4444';
-    if (lk.includes('best') || lk.includes('record') || lk.includes('100')) return '#00ff88';
-    return '#888888'; // neutral
+  const formatStoryDate = (dateKey: string): string => {
+    if (dateKey === 'today') {
+      return format(new Date(), 'dd MMM yyyy').toLowerCase();
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+      const parsed = parseISO(dateKey);
+      if (!Number.isNaN(parsed.getTime())) {
+        return format(parsed, 'dd MMM yyyy').toLowerCase();
+      }
+    }
+
+    return dateKey.toLowerCase();
   };
 
   const statusColor = analysis
@@ -498,36 +504,27 @@ export const CipherPage = () => {
               YOUR STORY SO FAR
             </div>
 
-            <div className="cipher-timeline-wrapper">
-              <div className="cipher-timeline-line" />
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 32 }}>
-                {Object.entries(analysis.timelineComments).map(([dateKey, comment], idx, arr) => {
-                  const dotColor = getTimelineDotColor(dateKey, idx, arr.length);
-                  return (
-                    <div key={dateKey} className="cipher-timeline-node scroll-slide-left" style={{ position: 'relative', paddingLeft: 0 }}>
-                      <div
-                        className="cipher-timeline-dot"
-                        style={{
-                          border: `2px solid ${dotColor}`,
-                          background: `${dotColor}33`,
-                          boxShadow: `0 0 8px ${dotColor}66`,
-                        }}
-                      />
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6, flexWrap: 'wrap' as const }}>
-                        <span className="cipher-timeline-date" style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
-                          {dateKey}
-                        </span>
-                        <span className="cipher-timeline-title" style={{ fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' as const }}>
-                          {dateKey === 'today' ? 'THE PRESENT' : dateKey.includes('-') ? 'SYSTEM EVENT' : dateKey.toUpperCase()}
-                        </span>
+            <div className="story-chronicle">
+              {Object.entries(analysis.timelineComments).map(([dateKey, comment], idx, arr) => {
+                const eventTitle = dateKey === 'today' ? 'THE PRESENT' : dateKey.includes('-') ? 'SYSTEM EVENT' : dateKey.toUpperCase();
+                return (
+                  <article key={dateKey} className="story-node cipher-timeline-node scroll-slide-left">
+                    <div className="story-node-card">
+                      <div className="story-node-top">
+                        <span className="story-node-date">{formatStoryDate(dateKey)}</span>
+                        <span className="story-node-title">{eventTitle}</span>
                       </div>
-                      <div className="cipher-timeline-comment" style={{ fontStyle: 'italic', color: 'var(--text-secondary)', borderLeft: '2px solid var(--bg-tertiary)', paddingLeft: 12, marginLeft: 0 }}>
-                        {comment}
-                      </div>
+                      <p className="story-node-comment">{comment}</p>
                     </div>
-                  );
-                })}
-              </div>
+                    {idx < arr.length - 1 && (
+                      <div className="story-flow-link" aria-hidden="true">
+                        <span className="story-flow-track" />
+                        <span className="story-flow-arrow" />
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </div>
 

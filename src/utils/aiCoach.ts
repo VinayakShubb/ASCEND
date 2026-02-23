@@ -1,6 +1,6 @@
 import type { Habit, HabitLog } from '../types';
 import { calculateDisciplineIndex, calculateDailyCompletion, getStreak, calculateWeightedScore } from './calculations';
-import { format, subDays } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { buildHabitIntentContext } from './habitIntent';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -74,6 +74,51 @@ function sanitizeSentence(input: string, maxWords: number = 24): string {
   if (!cleaned) return '';
   const trimmed = trimWords(cleaned, maxWords);
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function formatDateCompact(dateInput: string): string {
+  const parsed = parseISO(dateInput);
+  if (Number.isNaN(parsed.getTime())) return dateInput;
+  return format(parsed, 'dd MMM yyyy').toLowerCase();
+}
+
+function normalizeDateMentions(text: string): string {
+  const monthMap: Record<string, string> = {
+    january: 'jan', jan: 'jan',
+    february: 'feb', feb: 'feb',
+    march: 'mar', mar: 'mar',
+    april: 'apr', apr: 'apr',
+    may: 'may',
+    june: 'jun', jun: 'jun',
+    july: 'jul', jul: 'jul',
+    august: 'aug', aug: 'aug',
+    september: 'sep', sept: 'sep', sep: 'sep',
+    october: 'oct', oct: 'oct',
+    november: 'nov', nov: 'nov',
+    december: 'dec', dec: 'dec',
+  };
+
+  let output = text.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (_, isoDate: string) => formatDateCompact(isoDate));
+
+  output = output.replace(
+    /\b(\d{1,2})\s+([a-zA-Z]{3,9})\s+(\d{4})\b/g,
+    (_full, day: string, month: string, year: string) => {
+      const normalizedMonth = monthMap[month.toLowerCase()];
+      if (!normalizedMonth) return `${day} ${month} ${year}`;
+      return `${day.padStart(2, '0')} ${normalizedMonth} ${year}`;
+    }
+  );
+
+  output = output.replace(
+    /\b([a-zA-Z]{3,9})\s+(\d{1,2}),?\s+(\d{4})\b/g,
+    (_full, month: string, day: string, year: string) => {
+      const normalizedMonth = monthMap[month.toLowerCase()];
+      if (!normalizedMonth) return `${month} ${day} ${year}`;
+      return `${day.padStart(2, '0')} ${normalizedMonth} ${year}`;
+    }
+  );
+
+  return output;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -251,6 +296,7 @@ function enforceTimelineMath(
     output = output.replace(/\bdiscipline\s+index\b/gi, 'daily weighted score');
     output = output.replace(/(\d+)\s*\/\s*100\s+index/gi, '$1/100 daily weighted score');
     output = output.replace(/\bindex\b/gi, 'daily weighted score');
+    output = normalizeDateMentions(output);
     return output.trim();
   };
 
@@ -265,17 +311,17 @@ function enforceTimelineMath(
 
     if (key === ctx.bestDayDate) {
       const base = normalizeNonTodayText(raw);
-      normalized[key] = base
+      normalized[key] = normalizeDateMentions(base
         ? `${base} Best day daily weighted score: ${ctx.bestDayScore}/100.`
-        : `Best day daily weighted score: ${ctx.bestDayScore}/100.`;
+        : `Best day daily weighted score: ${ctx.bestDayScore}/100.`);
       return;
     }
 
     if (ctx.deadStreakStartDate && key === ctx.deadStreakStartDate) {
       const base = normalizeNonTodayText(raw);
-      normalized[key] = base
+      normalized[key] = normalizeDateMentions(base
         ? `${base} Daily weighted score was 0/100.`
-        : `Daily weighted score was 0/100.`;
+        : `Daily weighted score was 0/100.`);
       return;
     }
 
@@ -294,7 +340,7 @@ export async function getCipherAnalysis(
   isNewUser: boolean = false
 ): Promise<CipherAnalysisOutput | null> {
   const dateStr = new Date().toDateString();
-  const cacheKey = `ascend_ai_cipher_v3_${userId}_${dateStr}`; // v3 adds habit-intent context and text normalization
+  const cacheKey = `ascend_ai_cipher_v4_${userId}_${dateStr}`; // v4 enforces compact date formatting and text normalization
 
   if (!forceRefresh) {
     const cached = getCache(cacheKey);
@@ -517,6 +563,7 @@ RULES — CRITICAL:
 - Never write habit names with brackets like [hard] — write naturally.
 - Reference specific dates, percentages, habit names from the data above.
 - Use PROTOCOL INTENT CONTEXT to understand abbreviations and protocol meaning before giving advice.
+- Date format for any explicit date in your writing must be exactly "dd Mon yyyy" (example: 22 Feb 2026).
 MATH DEFINITIONS (NON-NEGOTIABLE):
 - Discipline Index (DI) = 7-day rolling average. Current DI is exactly ${disciplineIndex}/100.
 - Daily Weighted Score = single-day score for a specific date from DAILY HISTORY.
@@ -586,12 +633,28 @@ Only reference data provided above. Do not invent events, dates, or patterns.
     parsed.status = isNewUser
       ? (disciplineIndex >= 70 ? 'elite' : 'solid')
       : (disciplineIndex >= 80 ? 'elite' : (disciplineIndex >= 50 ? 'solid' : (disciplineIndex >= 20 ? 'slipping' : 'critical')));
+    parsed.hallOfFame = parsed.hallOfFame || { bestProtocol: '', bestProtocolComment: '', bestDayComment: '' };
+    parsed.hallOfShame = parsed.hallOfShame || { worstProtocol: '', worstProtocolComment: '', worstStreakComment: '' };
+    parsed.operatorVerdict = normalizeDateMentions(parsed.operatorVerdict || '');
+    parsed.personalityInsight = normalizeDateMentions(parsed.personalityInsight || '');
+    parsed.ceilingInsight = normalizeDateMentions(parsed.ceilingInsight || '');
+    parsed.biggestMistake = normalizeDateMentions(parsed.biggestMistake || '');
+    parsed.biggestWin = normalizeDateMentions(parsed.biggestWin || '');
+    parsed.hallOfFame.bestDayComment = normalizeDateMentions(parsed.hallOfFame?.bestDayComment || '');
+    parsed.hallOfFame.bestProtocolComment = normalizeDateMentions(parsed.hallOfFame?.bestProtocolComment || '');
+    parsed.hallOfShame.worstProtocolComment = normalizeDateMentions(parsed.hallOfShame?.worstProtocolComment || '');
+    parsed.hallOfShame.worstStreakComment = normalizeDateMentions(parsed.hallOfShame?.worstStreakComment || '');
     parsed.lowlightsComments = {
-      longestDeadStreak: sanitizeSentence(parsed.lowlightsComments?.longestDeadStreak || '', 18),
-      worstDay: sanitizeSentence(parsed.lowlightsComments?.worstDay || '', 18),
-      mostBrokenHabit: sanitizeSentence(parsed.lowlightsComments?.mostBrokenHabit || '', 18),
-      biggestDrop: sanitizeSentence(parsed.lowlightsComments?.biggestDrop || '', 18),
+      longestDeadStreak: normalizeDateMentions(sanitizeSentence(parsed.lowlightsComments?.longestDeadStreak || '', 18)),
+      worstDay: normalizeDateMentions(sanitizeSentence(parsed.lowlightsComments?.worstDay || '', 18)),
+      mostBrokenHabit: normalizeDateMentions(sanitizeSentence(parsed.lowlightsComments?.mostBrokenHabit || '', 18)),
+      biggestDrop: normalizeDateMentions(sanitizeSentence(parsed.lowlightsComments?.biggestDrop || '', 18)),
     };
+    parsed.orders = (parsed.orders || []).map(order => ({
+      ...order,
+      action: normalizeDateMentions(order.action || ''),
+      estimatedImpact: normalizeDateMentions(order.estimatedImpact || ''),
+    }));
     parsed.timelineComments = enforceTimelineMath(parsed.timelineComments, {
       userId,
       disciplineIndex,
