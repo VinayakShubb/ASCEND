@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO, addYears } from 'date-fns';
 import { Check, X } from 'lucide-react';
-import { calculateDailyCompletion } from '../../utils/calculations';
+import { calculateDailyCompletion, calculateWeightedScore } from '../../utils/calculations';
 import { AppFooter } from '../UI/AppFooter';
 
 export const CalendarPage = () => {
@@ -33,7 +33,7 @@ export const CalendarPage = () => {
   const heatmapData = useMemo(() => {
     return allDays.map(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const score = calculateDailyCompletion(habits, logs, dateStr);
+      const score = calculateWeightedScore(habits, logs, dateStr);
       const dayOfWeek = getDay(date); // 0=Sunday
       const futureDay = isFuture(date);
       const isPast = isBefore(startOfDay(date), todayDate) && dateStr !== todayStr;
@@ -91,7 +91,8 @@ export const CalendarPage = () => {
     status: getHabitStatus(h.id, selectedDate)
   }));
 
-  const selectedDayScore = calculateDailyCompletion(habits, logs, selectedDate);
+  const selectedDayCompletion = calculateDailyCompletion(habits, logs, selectedDate);
+  const selectedDayWeightedScore = calculateWeightedScore(habits, logs, selectedDate);
   const isPastDay = isBefore(new Date(selectedDate + 'T00:00:00'), todayDate) && selectedDate !== todayStr;
   const isFutureDay = isFuture(new Date(selectedDate + 'T00:00:00'));
 
@@ -134,8 +135,8 @@ export const CalendarPage = () => {
           <div className="stat-label">Missed Days</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{Math.round(selectedDayScore)}%</div>
-          <div className="stat-label">Selected Day</div>
+          <div className="stat-value">{Math.round(selectedDayWeightedScore)}%</div>
+          <div className="stat-label">Selected DWS</div>
         </div>
       </div>
 
@@ -234,9 +235,33 @@ export const CalendarPage = () => {
                 {isPastDay ? '🔒 READ ONLY' : selectedDate === todayStr ? '🟢 TODAY — ACTIVE' : ''}
               </div>
             </div>
-            <span className="mono text-accent" style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-              {Math.round(selectedDayScore)}%
-            </span>
+            <div style={{ textAlign: 'right' }}>
+              <div className="mono text-accent" style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                {Math.round(selectedDayWeightedScore)}%
+              </div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Daily Weighted Score
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '0.5rem 0.65rem' }}>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.15rem' }}>
+                Daily Weighted Score
+              </div>
+              <div className="mono text-accent" style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                {Math.round(selectedDayWeightedScore)}%
+              </div>
+            </div>
+            <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '0.5rem 0.65rem' }}>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.15rem' }}>
+                Completion Rate
+              </div>
+              <div className="mono" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {Math.round(selectedDayCompletion)}%
+              </div>
+            </div>
           </div>
 
           <div style={{ 
@@ -244,8 +269,8 @@ export const CalendarPage = () => {
             borderRadius: '2px', overflow: 'hidden', marginBottom: '1rem' 
           }}>
             <div style={{ 
-              width: `${Math.min(selectedDayScore, 100)}%`, height: '100%', 
-              background: selectedDayScore >= 100 ? '#00FF66' : selectedDayScore >= 50 ? 'var(--accent-primary)' : '#FF4444',
+              width: `${Math.min(selectedDayWeightedScore, 100)}%`, height: '100%', 
+              background: selectedDayWeightedScore >= 100 ? '#00FF66' : selectedDayWeightedScore >= 50 ? 'var(--accent-primary)' : '#FF4444',
               borderRadius: '2px', transition: 'width 0.3s ease'
             }} />
           </div>

@@ -1,6 +1,7 @@
 import type { Habit, HabitLog } from '../types';
 import { calculateDisciplineIndex, calculateDailyCompletion, getStreak, calculateWeightedScore } from './calculations';
 import { format, subDays } from 'date-fns';
+import { buildHabitIntentContext } from './habitIntent';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -59,6 +60,22 @@ function setCache(key: string, value: any): void {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function trimWords(input: string, maxWords: number): string {
+  const words = input.split(/\s+/).filter(Boolean);
+  return words.slice(0, maxWords).join(' ');
+}
+
+function sanitizeSentence(input: string, maxWords: number = 24): string {
+  const cleaned = input
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^["'\s]+|["'\s]+$/g, '')
+    .trim();
+  if (!cleaned) return '';
+  const trimmed = trimWords(cleaned, maxWords);
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
 // -------------------------------------------------------------------------------------------------
 // FEATURE 3 — Live AI Coach (Analytics Sidebar)
 // -------------------------------------------------------------------------------------------------
@@ -78,7 +95,7 @@ export async function getCoachInsight(
 ): Promise<CoachOutput | null> {
   const today = new Date().toDateString();
   const dateStr = today; // used for keys and checks
-  const cacheKey = `ascend_ai_coach_${userId}_${dateStr}`;
+  const cacheKey = `ascend_ai_coach_v2_${userId}_${dateStr}`;
 
   if (!forceRefresh) {
     const cached = getCache(cacheKey);
@@ -100,6 +117,7 @@ export async function getCoachInsight(
   if (activeHabits.length === 0) {
       return null;
   }
+  const habitIntentContext = buildHabitIntentContext(activeHabits);
 
   const habitDetails = activeHabits.map(h => {
     const streak = getStreak(h.id, logs, todayFormatStr);
@@ -133,6 +151,8 @@ USER PERFORMANCE DATA:
 - Day: ${dayOfWeek}
 - Protocols:
 ${habitDetails}
+- Habit intent context:
+${habitIntentContext}
 
 Status thresholds and TONALITY RULES:
 - elite (index >= 80): Tone = Appreciating, acknowledging high performance, commanding them to maintain the elite standard.
@@ -143,6 +163,7 @@ Status thresholds and TONALITY RULES:
 The user's name is ${userId}. Address them by name directly. Never use the word 'operator'.
 Speak directly to ${userId} in second person. Use 'you' and 'your'. Be direct like a drill sergeant. 
 Use their actual habit names and actual numbers. Never write in third person. Never be passive.
+Interpret each habit with the provided intent context before giving insight or action.
 
 Respond ONLY with this exact JSON:
 {
@@ -155,6 +176,7 @@ Respond ONLY with this exact JSON:
 Rules:
 - Give a response that perfectly matches the Tonality Rule for their current status.
 - Use actual habit names from the data, never generic references
+- Use Habit intent context to infer what each protocol means in real life.
 - DO NOT mention the difficulty level (e.g. hard, medium) in your response. Just use the name.
 - If a habit has 0/7 or low completion this week, call it out directly.
 - The action must be specific: not "be consistent" but "complete [Habit Name] tonight before sleep" or "do [Habit Name] immediately".
@@ -203,6 +225,66 @@ export interface CipherAnalysisOutput {
   analyzedAt?: string;
 }
 
+interface TimelineMathContext {
+  userId: string;
+  disciplineIndex: number;
+  bestDayDate: string;
+  bestDayScore: number;
+  deadStreakStartDate: string;
+}
+
+function enforceTimelineMath(
+  timelineComments: Record<string, string> | undefined,
+  ctx: TimelineMathContext
+): Record<string, string> {
+  const comments = timelineComments || {};
+  const normalized: Record<string, string> = {};
+
+  const keys = new Set<string>(Object.keys(comments));
+  keys.add(ctx.bestDayDate);
+  keys.add('today');
+  if (ctx.deadStreakStartDate) keys.add(ctx.deadStreakStartDate);
+
+  const normalizeNonTodayText = (text: string): string => {
+    let output = text;
+    // For date-level events, "index" is mathematically incorrect terminology.
+    output = output.replace(/\bdiscipline\s+index\b/gi, 'daily weighted score');
+    output = output.replace(/(\d+)\s*\/\s*100\s+index/gi, '$1/100 daily weighted score');
+    output = output.replace(/\bindex\b/gi, 'daily weighted score');
+    return output.trim();
+  };
+
+  keys.forEach((key) => {
+    const raw = (comments[key] || '').trim();
+
+    if (key === 'today') {
+      // Today line must always reference DI exactly and explicitly.
+      normalized.today = `${ctx.userId}, today's Discipline Index (7-day average) is ${ctx.disciplineIndex}/100.`;
+      return;
+    }
+
+    if (key === ctx.bestDayDate) {
+      const base = normalizeNonTodayText(raw);
+      normalized[key] = base
+        ? `${base} Best day daily weighted score: ${ctx.bestDayScore}/100.`
+        : `Best day daily weighted score: ${ctx.bestDayScore}/100.`;
+      return;
+    }
+
+    if (ctx.deadStreakStartDate && key === ctx.deadStreakStartDate) {
+      const base = normalizeNonTodayText(raw);
+      normalized[key] = base
+        ? `${base} Daily weighted score was 0/100.`
+        : `Daily weighted score was 0/100.`;
+      return;
+    }
+
+    normalized[key] = normalizeNonTodayText(raw);
+  });
+
+  return normalized;
+}
+
 export async function getCipherAnalysis(
   userId: string,
   userCreatedAt: string | undefined,
@@ -212,7 +294,7 @@ export async function getCipherAnalysis(
   isNewUser: boolean = false
 ): Promise<CipherAnalysisOutput | null> {
   const dateStr = new Date().toDateString();
-  const cacheKey = `ascend_ai_cipher_${userId}_${dateStr}`; // New v6 key based on spec
+  const cacheKey = `ascend_ai_cipher_v3_${userId}_${dateStr}`; // v3 adds habit-intent context and text normalization
 
   if (!forceRefresh) {
     const cached = getCache(cacheKey);
@@ -221,6 +303,7 @@ export async function getCipherAnalysis(
 
   const activeHabits = habits.filter(h => !h.archived);
   if (activeHabits.length === 0) return null;
+  const habitIntentContext = buildHabitIntentContext(activeHabits);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const disciplineIndex = calculateDisciplineIndex(habits, logs);
@@ -374,7 +457,7 @@ export async function getCipherAnalysis(
   const bestHabit = sortedHabits[0];
   const worstHabit = sortedHabits[sortedHabits.length - 1];
 
-  const dailyScoresStr = dailyScores.map(d => `${d.date}: ${d.score}/100`).join('\n');
+  const dailyScoresStr = dailyScores.map(d => `${d.date}: DAILY_WEIGHTED_SCORE=${d.score}/100`).join('\n');
 
   // Timeline anchors
   const deadStreakStartStr = deadStreakStarts.length > 0 ? deadStreakStarts[deadStreakStarts.length - 1] : "";
@@ -413,13 +496,16 @@ Execution Type Detected: ${detectedType}
 PROTOCOL DATA:
 ${habitDetailsObj}
 
+PROTOCOL INTENT CONTEXT:
+${habitIntentContext}
+
 DAILY HISTORY (registration to today):
 ${dailyScoresStr}
 
 KEY COMPUTED STATS:
 - Best habit: ${bestHabit.name} at ${bestHabit.rate30d}%
 - Worst habit: ${worstHabit.name} at ${worstHabit.rate30d}%
-- Best day: ${bestDayObj.date} with ${bestDayObj.score} points
+- Best day: ${bestDayObj.date} with daily weighted score ${bestDayObj.score}/100
 - Longest dead streak: ${longestDeadStreak} consecutive days at zero
 - Biggest single drop: -${biggestDrop} points in 24 hours
 - Total habits: ${activeHabits.length}
@@ -430,6 +516,14 @@ RULES — CRITICAL:
 - Start operatorVerdict with "${userId},"
 - Never write habit names with brackets like [hard] — write naturally.
 - Reference specific dates, percentages, habit names from the data above.
+- Use PROTOCOL INTENT CONTEXT to understand abbreviations and protocol meaning before giving advice.
+MATH DEFINITIONS (NON-NEGOTIABLE):
+- Discipline Index (DI) = 7-day rolling average. Current DI is exactly ${disciplineIndex}/100.
+- Daily Weighted Score = single-day score for a specific date from DAILY HISTORY.
+- Completion % = raw completion rate for a day/window.
+- NEVER call a Daily Weighted Score "index".
+- For date-level events (best day, worst day, dead streak start), use the phrase "daily weighted score", not "index".
+- Only use "Discipline Index" when referring to the current 7-day DI value.
 ${isNewUser ? '- Be encouraging and patient. This is a new user learning the system.' : '- Be a coach: brutal when performance is bad, genuinely appreciative when it is good.'}
 - Every order must be executable TONIGHT, not someday.
 - Do not repeat the same advice across multiple sections.
@@ -444,9 +538,9 @@ Respond ONLY with this exact JSON. No markdown. No text outside the JSON:
   "operatorVerdict": "${isNewUser ? `2-3 sentences. Start with ${userId}. Encouraging welcome message. Mention they are in the learning phase. Reference their habit setup and early progress. Tell them CIPHER becomes more direct after day 3.` : `2-3 sentences. Start with ${userId}. Overall honest assessment using completion rates, streaks, and habit-specific data — not just the index number. Reference their actual habit performance.`}",
   "timelineComments": {
     "${userRegistrationDate}": "${isNewUser ? 'one encouraging line about starting their journey' : 'one line CIPHER comment on day one'}",
-    "${bestDayObj.date}": "${isNewUser ? 'one line celebrating their best effort so far' : 'one line on their best day'}",
+    "${bestDayObj.date}": "${isNewUser ? `one line celebrating their best effort so far. If mentioning ${bestDayObj.score}/100, call it daily weighted score.` : `one line on their best day. If mentioning ${bestDayObj.score}/100, MUST call it daily weighted score (NOT index).`}",
     ${deadStreakStartStr ? `"${deadStreakStartStr}": "${isNewUser ? 'one gentle line — missed days are normal when starting out' : 'one line on when the dead streak began'}",` : ''}
-    "today": "one line about today's ${disciplineIndex}/100 index — use EXACTLY this number, do not change it${isNewUser ? '. Be encouraging.' : ''}"
+    "today": "one line about today's Discipline Index (7-day average): ${disciplineIndex}/100 - use EXACTLY this number, do not change it${isNewUser ? '. Be encouraging.' : ''}"
   },
   "executionType": "${detectedType}",
   "personalityInsight": "${isNewUser ? `2-3 sentences. Talk DIRECTLY to ${userId}. Explain their execution type in an encouraging, educational way. Frame it as 'here is how you naturally work' not a judgment.` : `2-3 sentences. Talk DIRECTLY to ${userId} using 'you' and 'your'. NEVER use third-person like '${userId} tends to...'. Explain why they are this type using their specific numbers. Be direct.`}",
@@ -461,10 +555,10 @@ Respond ONLY with this exact JSON. No markdown. No text outside the JSON:
     "worstStreakComment": "${isNewUser ? 'Talk DIRECTLY to them. 1 sentence normalizing missed days for new users.' : `Talk DIRECTLY to them. 1 sentence about their ${longestDeadStreak}-day dead streak.`}"
   },
   "lowlightsComments": {
-    "longestDeadStreak": "${isNewUser ? '1 encouraging sentence. Missed days are normal early on. Give a gentle tip.' : '1 sentence CIPHER reaction PLUS specific actionable advice on how to prevent this.'}",
-    "worstDay": "${isNewUser ? '1 encouraging sentence. Frame as learning, give a simple tip.' : '1 sentence CIPHER reaction PLUS specific actionable advice on how to improve.'}",
-    "mostBrokenHabit": "${isNewUser ? '1 encouraging sentence about building this habit gradually.' : '1 sentence CIPHER reaction PLUS specific actionable advice to fix this habit.'}",
-    "biggestDrop": "${isNewUser ? '1 encouraging sentence. Fluctuations are normal at the start.' : '1 sentence CIPHER reaction PLUS specific actionable advice to stabilize.'}"
+    "longestDeadStreak": "${isNewUser ? '1 encouraging sentence, max 18 words, gentle tip.' : '1 sentence, max 18 words. Clear advice to prevent repeat.'}",
+    "worstDay": "${isNewUser ? '1 encouraging sentence, max 18 words, learning-focused.' : '1 sentence, max 18 words. Clear advice to improve next low day.'}",
+    "mostBrokenHabit": "${isNewUser ? '1 encouraging sentence, max 18 words, gradual build.' : '1 sentence, max 18 words. Direct fix for this habit.'}",
+    "biggestDrop": "${isNewUser ? '1 encouraging sentence, max 18 words, stabilize routine.' : '1 sentence, max 18 words. Advice to stabilize performance swings.'}"
   },
   "ceilingInsight": "${isNewUser ? `Talk DIRECTLY to them. 2 sentences. Explain what the ceiling means and how it will grow as they build consistency. Be encouraging.` : 'Talk DIRECTLY to them. 2 sentences. What is your ceiling with current protocols? Can you hit 100? What would it take?'}",
   "biggestMistakeName": "${isNewUser ? 'focus area or habit name' : 'habit name or short pattern label'}",
@@ -492,6 +586,19 @@ Only reference data provided above. Do not invent events, dates, or patterns.
     parsed.status = isNewUser
       ? (disciplineIndex >= 70 ? 'elite' : 'solid')
       : (disciplineIndex >= 80 ? 'elite' : (disciplineIndex >= 50 ? 'solid' : (disciplineIndex >= 20 ? 'slipping' : 'critical')));
+    parsed.lowlightsComments = {
+      longestDeadStreak: sanitizeSentence(parsed.lowlightsComments?.longestDeadStreak || '', 18),
+      worstDay: sanitizeSentence(parsed.lowlightsComments?.worstDay || '', 18),
+      mostBrokenHabit: sanitizeSentence(parsed.lowlightsComments?.mostBrokenHabit || '', 18),
+      biggestDrop: sanitizeSentence(parsed.lowlightsComments?.biggestDrop || '', 18),
+    };
+    parsed.timelineComments = enforceTimelineMath(parsed.timelineComments, {
+      userId,
+      disciplineIndex,
+      bestDayDate: bestDayObj.date,
+      bestDayScore: bestDayObj.score,
+      deadStreakStartDate: deadStreakStartStr,
+    });
     parsed.analyzedAt = new Date().toISOString();
     setCache(cacheKey, parsed);
     return parsed;
@@ -500,3 +607,4 @@ Only reference data provided above. Do not invent events, dates, or patterns.
     return null;
   }
 }
+

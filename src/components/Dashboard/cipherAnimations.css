@@ -189,12 +189,102 @@
   align-items: center;
 }
 
-/* LOWLIGHT ROW */
-.lowlight-row {
+/* INCIDENT REPORT */
+.incident-report-card {
+  overflow: hidden;
+}
+
+.incident-header {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.incident-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #ff6666;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.incident-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.incident-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 12px 0;
+}
+
+.incident-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.incident-item {
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.incident-item-top {
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.incident-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.11em;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+}
+
+.incident-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.incident-metric {
+  max-width: 55%;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.incident-metric.critical {
+  color: #ff6666;
+}
+
+.incident-metric.warning {
+  color: #ffaa33;
+}
+
+.incident-metric.neutral {
+  color: var(--text-primary);
+}
+
+.incident-metric.focus {
+  color: #00cc66;
+}
+
+.incident-comment {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
 }
 
 /* GLOBALS & RESPONSIVE */
@@ -243,7 +333,6 @@ button, .type-chip-clickable {
 }
 .biggest-mistake-name { font-size: 20px; }
 .biggest-mistake-body { font-size: 14px; line-height: 1.6; }
-.lowlight-value { text-align: right; font-size: 20px; font-weight: 700; }
 .ceiling-number { font-size: 48px; font-weight: 700; }
 .directive-rank { font-size: 32px; }
 .directive-top-row { display: flex; flex-direction: row; justify-content: space-between; align-items: center; }
@@ -272,8 +361,9 @@ button, .type-chip-clickable {
   .cipher-type-name { font-size: 22px; }
   
   .hall-grid { grid-template-columns: 1fr; gap: 12px; }
-  .lowlight-row { flex-direction: column; gap: 4px; }
-  .lowlight-value { text-align: left; font-size: 16px; }
+  .incident-grid { grid-template-columns: 1fr; }
+  .incident-item { padding: 10px; }
+  .incident-metric { max-width: 60%; font-size: 14px; }
   
   .ceiling-numbers { grid-template-columns: 1fr; text-align: center; }
   .ceiling-number { font-size: 36px; }

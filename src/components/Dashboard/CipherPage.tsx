@@ -141,7 +141,7 @@ export const CipherPage = () => {
   useEffect(() => {
     if (!user || activeHabits.length === 0) return;
     const dateStr = new Date().toDateString();
-    const cacheKey = `ascend_ai_cipher_${user.username}_${dateStr}`;
+    const cacheKey = `ascend_ai_cipher_v3_${user.username}_${dateStr}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
@@ -256,6 +256,47 @@ export const CipherPage = () => {
   const statusColor = analysis
     ? (isNewUser ? '#00cc66' : (STATUS_COLORS[analysis.status] || '#ffaa00'))
     : '#ffaa00';
+  const cleanIncidentComment = (text: string) =>
+    text
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^["'\s]+|["'\s]+$/g, '')
+      .trim();
+
+  const incidentItems = analysis ? [
+    {
+      key: 'dead-streak',
+      label: 'STREAK RISK',
+      meta: `${computed.longestDeadStreak} day${computed.longestDeadStreak !== 1 ? 's' : ''} at zero`,
+      metric: `${computed.longestDeadStreak}D`,
+      tone: isNewUser ? 'focus' : 'critical',
+      comment: cleanIncidentComment(analysis.lowlightsComments.longestDeadStreak) || 'Plan tomorrow before sleep to avoid another zero day.',
+    },
+    {
+      key: 'worst-day',
+      label: 'LOWEST DAY',
+      meta: computed.worstDay.date,
+      metric: `${computed.worstDay.score}/${computed.worstDay.total}`,
+      tone: isNewUser ? 'focus' : 'warning',
+      comment: cleanIncidentComment(analysis.lowlightsComments.worstDay) || 'Protect this day with one minimum protocol if energy drops.',
+    },
+    {
+      key: 'broken-habit',
+      label: 'WEAKEST PROTOCOL',
+      meta: `${getHabitRate(computed.mostBrokenHabit)}% consistency`,
+      metric: computed.mostBrokenHabit,
+      tone: 'neutral',
+      comment: cleanIncidentComment(analysis.lowlightsComments.mostBrokenHabit) || 'Anchor this protocol to a fixed time block.',
+    },
+    {
+      key: 'drop',
+      label: 'SHARPEST DROP',
+      meta: 'day-over-day DI shift',
+      metric: computed.biggestDrop > 0 ? `-${computed.biggestDrop}` : '0',
+      tone: isNewUser ? 'focus' : 'critical',
+      comment: cleanIncidentComment(analysis.lowlightsComments.biggestDrop) || 'Stabilize with one non-negotiable protocol before bed daily.',
+    },
+  ] : [];
 
   if (!user) return null;
 
@@ -572,31 +613,31 @@ export const CipherPage = () => {
           </div>
 
           {/* ─── SECTION 6: THE LOWLIGHTS REEL ─────────── */}
-          <div className="scroll-scale lowlights-reel cipher-card" style={{ background: isNewUser ? 'rgba(0,204,102,0.04)' : 'rgba(255,68,68,0.04)', border: `1px solid ${isNewUser ? 'rgba(0,204,102,0.15)' : 'rgba(255,68,68,0.15)'}`, borderRadius: 8 }}>
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: isNewUser ? '#00cc66' : '#ff4444', fontFamily: "'JetBrains Mono', monospace" }}>{isNewUser ? 'ℹ EARLY PATTERNS' : '⚠ INCIDENT REPORT'}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{isNewUser ? `${user.username}'s first steps` : `${user.username}'s low points`}</div>
+          <div className="scroll-scale lowlights-reel cipher-card incident-report-card" style={{ background: isNewUser ? 'rgba(0,204,102,0.04)' : 'rgba(255,68,68,0.04)', border: `1px solid ${isNewUser ? 'rgba(0,204,102,0.15)' : 'rgba(255,68,68,0.15)'}`, borderRadius: 8 }}>
+            <div className="incident-header">
+              <div className="incident-title" style={{ color: isNewUser ? '#00cc66' : '#ff6666' }}>{isNewUser ? 'EARLY PATTERNS' : 'INCIDENT REPORT'}</div>
+              <div className="incident-subtitle">
+                {isNewUser ? `${user.username}, this is a learning snapshot.` : `${user.username}, these are the highest-impact weak points.`}
+              </div>
             </div>
 
             {computed.daysSinceReg < 1 ? (
-              <div style={{ fontSize: 14, color: 'var(--text-primary)', fontStyle: 'italic', padding: '16px 0' }}>
-                "No incidents on record yet. {user.username}, keep it that way."
+              <div className="incident-empty">
+                No incidents on record yet. Keep this clean.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' as const }}>
-                {[
-                  { label: 'LONGEST DEAD STREAK', value: `${computed.longestDeadStreak} consecutive day${computed.longestDeadStreak !== 1 ? 's' : ''}, zero completions`, comment: analysis.lowlightsComments.longestDeadStreak },
-                  { label: 'WORST SINGLE DAY', value: `${computed.worstDay.date} — ${computed.worstDay.score} of ${computed.worstDay.total} protocols`, comment: analysis.lowlightsComments.worstDay },
-                  { label: 'MOST BROKEN HABIT', value: computed.mostBrokenHabit, comment: analysis.lowlightsComments.mostBrokenHabit },
-                  { label: 'BIGGEST SINGLE DROP', value: computed.biggestDrop > 0 ? `-${computed.biggestDrop} points` : 'No drops recorded', comment: analysis.lowlightsComments.biggestDrop },
-                ].map((item, i, arr) => (
-                  <div key={item.label} style={{ paddingBottom: 16, marginBottom: 16, borderBottom: i < arr.length - 1 ? '1px solid var(--bg-tertiary)' : 'none' }}>
-                    <div className="lowlight-row">
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.12em', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase' as const }}>{item.label}</span>
-                      <span className="lowlight-value" style={{ color: 'var(--accent-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{item.value}</span>
+              <div className="incident-grid">
+                {incidentItems.map(item => (
+                  <article key={item.key} className="incident-item">
+                    <div className="incident-item-top">
+                      <div>
+                        <div className="incident-label">{item.label}</div>
+                        <div className="incident-meta">{item.meta}</div>
+                      </div>
+                      <div className={`incident-metric ${item.tone}`}>{item.metric}</div>
                     </div>
-                    <div style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-muted)', marginTop: 8 }}>"{item.comment}"</div>
-                  </div>
+                    <p className="incident-comment">{item.comment}</p>
+                  </article>
                 ))}
               </div>
             )}
@@ -738,3 +779,4 @@ export const CipherPage = () => {
     </div>
   );
 };
+

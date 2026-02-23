@@ -22,26 +22,40 @@ const useScrollReveal = (rootSelector?: string) => {
     // Therefore, root must be null (viewport) on mobile.
     const root = (!isMobile && rootSelector) ? document.querySelector(rootSelector) : null;
     
-    // Tighter rootMargin on mobile since screen is smaller. 
-    // CRITICAL: Negative values on both TOP and BOTTOM ensure the animation triggers accurately when scrolling UP and DOWN.
-    const margin = isMobile ? '-40px 0px -40px 0px' : '-50px 0px -50px 0px';
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach(entry => {
+          const target = entry.target as HTMLElement;
           if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
+            requestAnimationFrame(() => target.classList.add('revealed'));
           } else {
             // Remove class so it animates again when scrolling back
-            entry.target.classList.remove('revealed');
+            requestAnimationFrame(() => target.classList.remove('revealed'));
           }
         });
       },
-      { threshold: 0.12, rootMargin: margin, root: root }
+      {
+        threshold: isMobile ? [0.08, 0.2, 0.35] : [0.12],
+        rootMargin: isMobile ? '-10% 0px -10% 0px' : '-50px 0px -50px 0px',
+        root
+      }
     );
 
-    const items = el.querySelectorAll('.scroll-reveal');
-    items.forEach(item => observer.observe(item));
+    const items = Array.from(el.querySelectorAll<HTMLElement>('.scroll-reveal'));
+    items.forEach((item, index) => {
+      item.style.setProperty('--reveal-delay', `${Math.min(index * 40, 220)}ms`);
+
+      if (isMobile) {
+        item.classList.add('mobile-reveal');
+        item.classList.remove('mfx-left', 'mfx-right', 'mfx-center');
+        const variant = index % 3 === 0 ? 'mfx-left' : index % 3 === 1 ? 'mfx-right' : 'mfx-center';
+        item.classList.add(variant);
+      } else {
+        item.classList.remove('mobile-reveal', 'mfx-left', 'mfx-right', 'mfx-center');
+      }
+
+      observer.observe(item);
+    });
 
     return () => observer.disconnect();
   }, [rootSelector]);

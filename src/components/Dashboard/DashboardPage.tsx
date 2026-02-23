@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { Check, Plus, Trash2, Flame, RefreshCw } from 'lucide-react';
 import type { Difficulty } from '../../types';
-import { calculateDailyCompletion, getStreak } from '../../utils/calculations';
+import { calculateDailyCompletion, calculateWeightedScore, getStreak } from '../../utils/calculations';
 import { getDailyBrief, type BriefOutput } from '../../utils/aiBrief';
 import { CipherAvatar } from '../UI/CipherAvatar';
 import { AppFooter } from '../UI/AppFooter';
@@ -18,6 +18,7 @@ export const DashboardPage = () => {
   const activeHabits = habits.filter(h => !h.archived);
   const completedCount = activeHabits.filter(h => getHabitStatus(h.id, today) === 'completed').length;
   const dailyCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
+  const dailyWeightedScore = Math.round(calculateWeightedScore(habits, logs, today));
 
   const [aiBrief, setAiBrief] = useState<BriefOutput | null>(null);
   const [isBriefLoading, setIsBriefLoading] = useState(false);
@@ -26,7 +27,7 @@ export const DashboardPage = () => {
     const fetchBrief = async () => {
       if (!user || activeHabits.length === 0) return;
       setIsBriefLoading(true);
-      const brief = await getDailyBrief(user.username, habits, logs);
+      const brief = await getDailyBrief(user.username, habits, logs, false, user.created_at);
       setAiBrief(brief);
       setIsBriefLoading(false);
     };
@@ -135,6 +136,10 @@ export const DashboardPage = () => {
         <div className="stat-card">
           <div className="stat-value">{activeHabits.length}</div>
           <div className="stat-label">Active Protocols</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{dailyWeightedScore}%</div>
+          <div className="stat-label">Today's DWS</div>
         </div>
       </div>
 
