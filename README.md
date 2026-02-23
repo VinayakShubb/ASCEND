@@ -1,6 +1,6 @@
 # ASCEND // PERSONAL EVOLUTION SYSTEM
 ### Architect: VINAYAK // SHUBV
-# LINK = https://ascend-vgk.vercel.app/
+#### LINK = https://ascend-vgk.vercel.app/
 
 ASCEND is a futuristic, AI-driven **habit tracker** and performance architecture that transforms your personal discipline into a quantified optimization problem. Unlike passive trackers, ASCEND is an active feedback system designed to measure personal consistency, identify execution gaps via the CIPHER analyst, and accelerate your evolution.
 
