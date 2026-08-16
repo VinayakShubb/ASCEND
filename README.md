@@ -12,17 +12,19 @@ The core thesis of ASCEND is that **discipline is measurable**.
 By assigning difficulty multipliers to every action, the system normalizes output across different domains (physical, intellectual, creative). A "perfect day" isn't about checking boxes—it's about maximizing your **Discipline Index (DI)**.
 
 ### The Discipline Index Algorithm
-Your Discipline Index (0-100) is a rolling 7-day weighted average calculated as:
+Your Discipline Index (0-100) is a rolling 7-day average of each day's weighted score:
 
-$$
-\text{Index} = \frac{\sum (\text{Daily Score} \times \text{Weight})}{7} \times 10
-$$
+```
+Daily Weighted Score  = (sum of difficulty multipliers for completed protocols)
+                       / (sum of difficulty multipliers for all active protocols) × 100
 
-Where:
-- **Daily Score** = (Sum of Completed Protocol Difficulties) / (Sum of Active Protocol Difficulties)
-- **Weight** = Recency factor (yesterday matters more than 7 days ago)
+Discipline Index (DI) = average(Daily Weighted Score for the last 7 days), rounded
+```
 
-Consistency is the only path to a high DI. A single missed day causes a sharp decay, requiring multiple perfect executions to recover momentum.
+Difficulty multipliers: Easy `1.0x`, Medium `1.2x`, Hard `1.5x`, Extreme `2.0x`. Harder protocols
+count for more of a day's score, so skipping one costs more than skipping an easy one. Every day in
+the 7-day window counts equally — there's no separate recency weighting beyond the window itself
+only covering the last 7 days. See `backend/services/calculations.py` for the exact implementation.
 
 ---
 
@@ -77,18 +79,68 @@ The face of the system is a blocky, pixel-art robot with reactive LED eyes.
 
 ## 4. Technical Architecture
 
-### Frontend (Interface)
-- **Framework**: React 18 + TypeScript + Vite
-- **Routing**: Internal state-based navigation with automatic scroll-restoration.
-- **Deployment**: GitHub and Vercel.
+```
+Browser (React SPA)
+   │  fetch() + Bearer token
+   ▼
+FastAPI backend  ──────►  Supabase (Postgres + Auth)
+   │
+   └────────────────────►  Groq API (Llama 3.1, server-side only)
+```
 
-### Backend (Infrastructure)
-- **Database**: PostgreSQL (Supabase)
-- **Auth**: Supabase Auth (JWT Tokens)
-- **AI Integration**: Groq API (Llama 3.1) for high-speed inference.
+### Frontend (`/frontend`) — Interface
+- **Framework**: React 19 + TypeScript + Vite
+- **Routing**: Internal state-based navigation with automatic scroll-restoration (`#hash` based, no router library)
+- **Data**: Talks only to the FastAPI backend over `fetch()` (`src/lib/api.ts`) — it never touches Supabase or Groq directly
+- **Deployment**: Vercel
+
+### Backend (`/backend`) — Logic + Infrastructure
+- **Framework**: FastAPI (Python), run with Uvicorn
+- **Database / Auth**: Supabase (Postgres + Auth). The backend holds the Supabase service-role key and is the trust boundary — every route validates the caller's JWT itself instead of relying on Postgres row-level security
+- **AI Integration**: Groq API (Llama 3.1) — the API key now lives only on the server, never shipped to the browser
+- **Structure**: `main.py` entrypoint, `routes/` (one file per resource), `models/` (Pydantic schemas), `services/` (business logic — habit math, AI prompt building, Groq client), `tests/` (pytest)
 
 ---
-**STATUS: OPERATIONAL**  
-**VERSION: 3.0.0**  
-**ARCHITECT: VINAYAK // SHUBV**  
+**STATUS: OPERATIONAL**
+**VERSION: 3.0.0**
+**ARCHITECT: VINAYAK // SHUBV**
 **DEPLOYMENT: GLOBAL // VERCEL**
+
+---
+
+## 5. Setup
+
+### Backend
+
+```bash
+cd backend
+python -m venv .venv
+.venv/Scripts/activate        # Windows: .venv\Scripts\activate | macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env          # fill in SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GROQ_API_KEY
+python -m uvicorn main:app --reload   # http://localhost:8000
+```
+
+Run the test suite:
+
+```bash
+cd backend
+pytest              # 93 tests, no real Supabase/Groq credentials needed -- see tests/fakes.py
+```
+
+The database schema lives in `backend/supabase_schema.sql` — run it once against a fresh Supabase
+project to create the `profiles`, `habits`, and `habit_logs` tables.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+
+cp .env.example .env.local    # VITE_API_URL defaults to http://localhost:8000
+npm run dev                   # http://localhost:5173
+```
+
+The frontend expects the backend to already be running at `VITE_API_URL`. Both need to be running
+at the same time for the app to work end-to-end.
