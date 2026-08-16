@@ -3,11 +3,12 @@ import { useData } from '../../context/DataContext';
 import { format } from 'date-fns';
 import { Plus, Trash2, Check, Archive } from 'lucide-react';
 import type { Difficulty } from '../../types';
-import { getStreak } from '../../utils/calculations';
+import { useStreaks } from '../../hooks/useStats';
 import { AppFooter } from '../UI/AppFooter';
 
 export const HabitsPage = () => {
-  const { habits, logs, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
+  const { habits, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus } = useData();
+  const streaks = useStreaks();
   const [showModal, setShowModal] = useState(false);
 
   const [filter, setFilter] = useState<'all' | 'active' | 'archived'>('active');
@@ -67,7 +68,7 @@ export const HabitsPage = () => {
             {categoryHabits.map(habit => {
               const status = getHabitStatus(habit.id, today);
               const isCompleted = status === 'completed';
-              const streak = getStreak(habit.id, logs, today);
+              const streak = streaks[habit.id] ?? 0;
 
               return (
                 <div key={habit.id} className={`habit-item ${isCompleted ? 'completed' : ''}`}>

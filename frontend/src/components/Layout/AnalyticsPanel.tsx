@@ -1,49 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { calculateDisciplineIndex, calculateDailyCompletion, calculateWeightedScore, getStreak } from '../../utils/calculations';
-import { getCoachInsight, type CoachOutput } from '../../utils/aiCoach';
+import { useStatsSummary, useStreaks } from '../../hooks/useStats';
+import { aiApi, statsApi, type CoachOutput, type DayStat } from '../../lib/api';
+import { getCoachCache, setCoachCache } from '../../lib/aiCache';
 import { format, subDays, isBefore, startOfDay } from 'date-fns';
 import { Activity, Flame, Target, AlertTriangle, RefreshCw } from 'lucide-react';
 import { CipherAvatar } from '../UI/CipherAvatar';
 export const AnalyticsPanel = () => {
   const { habits, logs } = useData();
   const { user } = useAuth();
-  
+
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDate = startOfDay(new Date());
-  
-  const disciplineIndex = calculateDisciplineIndex(habits, logs);
-  const dailyCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
+
+  const summary = useStatsSummary();
+  const streaks = useStreaks();
+  const disciplineIndex = summary.discipline_index;
+  const dailyCompletion = summary.today_completion_pct;
   const activeHabits = habits.filter(h => !h.archived);
-  
+
   const [aiInsight, setAiInsight] = useState<CoachOutput | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchInsight = async () => {
-      // User object from AuthProvider doesn't have an ID, so we use their username for caching
-      if (!user || activeHabits.length === 0) return;
-      setIsAiLoading(true);
-      const insight = await getCoachInsight(user.username, habits, logs);
-      setAiInsight(insight);
-      setIsAiLoading(false);
-    };
-    
-    fetchInsight();
-  }, [user, habits, logs, activeHabits.length]);
-
-  const handleRefreshAi = async () => {
+  const fetchInsight = async (force: boolean) => {
+    // User object from AuthProvider doesn't have an ID, so we use their username for caching
     if (!user || activeHabits.length === 0) return;
+
+    if (!force) {
+      const cached = getCoachCache<CoachOutput>(user.username);
+      if (cached) {
+        setAiInsight(cached);
+        return;
+      }
+    }
+
     setIsAiLoading(true);
-    const insight = await getCoachInsight(user.username, habits, logs, true);
+    const insight = await aiApi.coach();
+    if (insight) setCoachCache(user.username, insight);
     setAiInsight(insight);
     setIsAiLoading(false);
   };
-  
+
+  useEffect(() => {
+    fetchInsight(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, habits, logs, activeHabits.length]);
+
+  const handleRefreshAi = () => fetchInsight(true);
+
   const habitStreaks = activeHabits.map(h => ({
     name: h.name,
-    streak: getStreak(h.id, logs, today)
+    streak: streaks[h.id] ?? 0
   }));
   
   // Top Streak: only show a protocol name if at least one has streak > 0
@@ -68,11 +76,21 @@ export const AnalyticsPanel = () => {
     .filter(h => h.completions < 5 && h.name && h.name !== 'NaN')
     .sort((a, b) => a.completions - b.completions);
 
-  // Weekly heatmap with past day detection
+  // Weekly heatmap with past day detection. Fetched in one request rather
+  // than calling calculateWeightedScore per day client-side.
+  const [weekStats, setWeekStats] = useState<DayStat[]>([]);
+  useEffect(() => {
+    statsApi
+      .range(format(subDays(new Date(), 6), 'yyyy-MM-dd'), today)
+      .then(setWeekStats)
+      .catch(() => setWeekStats([]));
+  }, [habits, logs, today]);
+  const weekByDate = useMemo(() => new Map(weekStats.map(d => [d.date, d])), [weekStats]);
+
   const heatmapDays = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), 6 - i);
     const dateStr = format(date, 'yyyy-MM-dd');
-    const score = calculateWeightedScore(habits, logs, dateStr);
+    const score = weekByDate.get(dateStr)?.weighted_score ?? 0;
     const dayLabel = format(date, 'EEE').charAt(0);
     const isPastDay = isBefore(startOfDay(date), todayDate) && dateStr !== today;
     const isToday = dateStr === today;
@@ -81,7 +99,7 @@ export const AnalyticsPanel = () => {
     else if (score >= 75) level = 3;
     else if (score >= 50) level = 2;
     else if (score > 0) level = 1;
-    return { dayLabel, level, score: Math.round(score), isPastDay, isToday };
+    return { dayLabel, level, score, isPastDay, isToday };
   });
 
   const radius = 65;

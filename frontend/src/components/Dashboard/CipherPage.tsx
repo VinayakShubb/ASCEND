@@ -2,9 +2,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { getCipherAnalysis } from '../../utils/aiCoach';
-import type { CipherAnalysisOutput } from '../../utils/aiCoach';
-import { calculateDisciplineIndex, calculateWeightedScore } from '../../utils/calculations';
+import { aiApi, statsApi, type CipherAnalysisOutput, type DayStat, type StatsCeiling } from '../../lib/api';
+import { getCipherCache, setCipherCache } from '../../lib/aiCache';
 import { CipherAvatar } from '../UI/CipherAvatar';
 import { CipherRing } from '../UI/CipherRing';
 import { RefreshCw, Play, AlertTriangle } from 'lucide-react';
@@ -51,6 +50,40 @@ export const CipherPage = () => {
 
   const activeHabits = useMemo(() => habits.filter(h => !h.archived), [habits]);
 
+  // Current vs. hypothetical "complete everything today" Discipline Index --
+  // computed server-side (backend/routes/stats.py::stats_ceiling) since it
+  // requires re-running calculate_discipline_index against a simulated log.
+  const [ceiling, setCeiling] = useState<StatsCeiling>({ current: 0, max_today: 100 });
+  useEffect(() => {
+    if (!user || activeHabits.length === 0) return;
+    statsApi.ceiling().then(setCeiling).catch(() => {});
+  }, [user, activeHabits.length, habits, logs]);
+
+  // Day-by-day weighted scores from registration to today, for the lowlights
+  // computation below (longest dead streak / worst day / biggest drop).
+  // Capped to the same 366-day window /stats/range enforces server-side --
+  // the CIPHER AI narrative itself already only reasons over the most recent
+  // 100 days (see backend/services/ai_coach.py), so this is at least as
+  // generous as what the AI text already reflects.
+  const [dailyRangeStats, setDailyRangeStats] = useState<DayStat[]>([]);
+  useEffect(() => {
+    if (!user || activeHabits.length === 0) {
+      setDailyRangeStats([]);
+      return;
+    }
+    const regDate = new Date(user.created_at || new Date());
+    regDate.setHours(0, 0, 0, 0);
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const maxRangeMs = 366 * 24 * 60 * 60 * 1000;
+    const start = new Date(Math.max(regDate.getTime(), todayMidnight.getTime() - maxRangeMs));
+
+    statsApi
+      .range(format(start, 'yyyy-MM-dd'), format(todayMidnight, 'yyyy-MM-dd'))
+      .then(setDailyRangeStats)
+      .catch(() => setDailyRangeStats([]));
+  }, [user, activeHabits.length, habits, logs]);
+
   /* ─── COMPUTED DATA ─── */
   const computed = useMemo(() => {
     if (!user || activeHabits.length === 0) {
@@ -69,19 +102,11 @@ export const CipherPage = () => {
     const diffTime = Math.abs(today.getTime() - regDate.getTime());
     const daysSinceReg = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
 
-    const currentDi = Math.round(calculateDisciplineIndex(habits, logs));
+    const currentDi = ceiling.current;
+    const maxDi = ceiling.max_today;
 
-    // Max possible DI if user completes everything today
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const mockLogs = [...logs];
-    activeHabits.forEach(h => {
-      if (!mockLogs.some(l => l.habit_id === h.id && l.date === todayStr && l.status === 'completed')) {
-        mockLogs.push({ id: `mock-${h.id}`, habit_id: h.id, date: todayStr, status: 'completed', created_at: new Date().toISOString() } as any);
-      }
-    });
-    const maxDi = Math.min(100, Math.ceil(calculateDisciplineIndex(habits, mockLogs)));
-
-    // Per-habit stats
+    // Per-habit stats -- plain filtering over already-fetched logs, not
+    // calculations.ts logic, so this stays client-side same as before.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
     const validDays = Math.min(30, daysSinceReg);
@@ -98,13 +123,8 @@ export const CipherPage = () => {
     const worstHabitMissedDays = sorted.length > 0 ? sorted[0].missedDays : 0;
     const mostBrokenHabit = sorted.length > 0 ? sorted[0].name : 'N/A';
 
-    // Daily scores for lowlights computation
-    const dailyScores: { date: string; score: number }[] = [];
-    for (let d = new Date(regDate); d <= today; d.setDate(d.getDate() + 1)) {
-      const ds = format(new Date(d), 'yyyy-MM-dd');
-      const score = Math.round(calculateWeightedScore(habits, logs, ds));
-      dailyScores.push({ date: ds, score });
-    }
+    // Daily scores for lowlights computation, from the fetched range.
+    const dailyScores = dailyRangeStats.map(d => ({ date: d.date, score: d.weighted_score }));
 
     // Longest dead streak (consecutive days at 0)
     let longestDeadStreak = 0;
@@ -132,7 +152,7 @@ export const CipherPage = () => {
       worstDay: { date: worstDay.date, score: worstDay.score, total: activeHabits.length },
       mostBrokenHabit, biggestDrop,
     };
-  }, [user, activeHabits, habits, logs]);
+  }, [user, activeHabits, logs, ceiling, dailyRangeStats]);
 
   const isNewUser = computed.daysSinceReg <= 3;
   const isDayFourTransition = computed.daysSinceReg >= 4 && !localStorage.getItem('cipher_veteran_seen');
@@ -140,16 +160,8 @@ export const CipherPage = () => {
   /* ─── CACHE LOAD ─── */
   useEffect(() => {
     if (!user || activeHabits.length === 0) return;
-    const dateStr = new Date().toDateString();
-    const cacheKey = `ascend_ai_cipher_v4_${user.username}_${dateStr}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        setAnalysis(JSON.parse(cached));
-      } catch {
-        console.error('Failed to parse cached CIPHER analysis');
-      }
-    }
+    const cached = getCipherCache<CipherAnalysisOutput>(user.username);
+    if (cached) setAnalysis(cached);
   }, [user, activeHabits.length]);
 
   /* ─── RUN ANALYSIS ─── */
@@ -161,9 +173,19 @@ export const CipherPage = () => {
     setDisplayDi(0);
     setDisplayMax(0);
 
+    if (!force) {
+      const cached = getCipherCache<CipherAnalysisOutput>(user.username);
+      if (cached) {
+        setAnalysis(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
-      const result = await getCipherAnalysis(user.username, user.created_at, habits, logs, force, isNewUser);
+      const result = await aiApi.cipher(isNewUser);
       if (result) {
+        setCipherCache(user.username, result);
         setAnalysis(result);
       } else {
         setError("Connection error or rate limit reached. Try again in a moment.");

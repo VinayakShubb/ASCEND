@@ -4,8 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { Check, Plus, Trash2, Flame, RefreshCw } from 'lucide-react';
 import type { Difficulty } from '../../types';
-import { calculateDailyCompletion, calculateWeightedScore, getStreak } from '../../utils/calculations';
-import { getDailyBrief, type BriefOutput } from '../../utils/aiBrief';
+import { useStatsSummary, useStreaks } from '../../hooks/useStats';
+import { aiApi, type BriefOutput } from '../../lib/api';
+import { getBriefCache, setBriefCache, getQuoteHistory, pushQuoteHistory } from '../../lib/aiCache';
 import { CipherAvatar } from '../UI/CipherAvatar';
 import { AppFooter } from '../UI/AppFooter';
 
@@ -17,8 +18,10 @@ export const DashboardPage = () => {
 
   const activeHabits = habits.filter(h => !h.archived);
   const completedCount = activeHabits.filter(h => getHabitStatus(h.id, today) === 'completed').length;
-  const dailyCompletion = Math.round(calculateDailyCompletion(habits, logs, today));
-  const dailyWeightedScore = Math.round(calculateWeightedScore(habits, logs, today));
+  const summary = useStatsSummary();
+  const streaks = useStreaks();
+  const dailyCompletion = summary.today_completion_pct;
+  const dailyWeightedScore = summary.today_weighted_score;
 
   const [aiBrief, setAiBrief] = useState<BriefOutput | null>(null);
   const [isBriefLoading, setIsBriefLoading] = useState(false);
@@ -26,13 +29,25 @@ export const DashboardPage = () => {
   useEffect(() => {
     const fetchBrief = async () => {
       if (!user || activeHabits.length === 0) return;
+
+      // Same-day cache check that used to live inside utils/aiBrief.ts.
+      const cached = getBriefCache<BriefOutput>(user.username, today);
+      if (cached) {
+        setAiBrief(cached);
+        return;
+      }
+
       setIsBriefLoading(true);
-      const brief = await getDailyBrief(user.username, habits, logs, false, user.created_at);
-      setAiBrief(brief);
+      const brief = await aiApi.brief(getQuoteHistory(user.username));
+      if (brief) {
+        setBriefCache(user.username, today, brief);
+        pushQuoteHistory(user.username, brief.quote);
+        setAiBrief(brief);
+      }
       setIsBriefLoading(false);
     };
     fetchBrief();
-  }, [user, habits, logs, activeHabits.length]);
+  }, [user, habits, logs, activeHabits.length, today]);
 
 
   const getStatusColor = (status: string) => {
@@ -178,7 +193,7 @@ export const DashboardPage = () => {
           {activeHabits.map(habit => {
             const status = getHabitStatus(habit.id, today);
             const isCompleted = status === 'completed';
-            const streak = getStreak(habit.id, logs, today);
+            const streak = streaks[habit.id] ?? 0;
             
             return (
               <div key={habit.id} className={`habit-item ${isCompleted ? 'completed' : ''}`}>

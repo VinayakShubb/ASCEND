@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Habit, HabitLog } from '../types';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -16,6 +16,11 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+interface ToggleResponse {
+  action: 'completed' | 'uncompleted';
+  log: HabitLog | null;
+}
+
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
 
@@ -23,7 +28,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch initial data
+  // Fetch initial data. Junk-name filtering now happens server-side
+  // (services/user_data.py) instead of here.
   useEffect(() => {
     if (!isAuthenticated) {
       setHabits([]);
@@ -33,124 +39,69 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchData = async () => {
       setLoading(true);
-      
-      const { data: habitsData } = await supabase
-        .from('habits')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      const { data: logsData } = await supabase
-        .from('habit_logs')
-        .select('*');
-
-      // Filter out corrupted/invalid habits (e.g. "NoN", empty names)
-      const validHabits = (habitsData || []).filter((h: any) => {
-        const name = (h.name || '').trim().toLowerCase();
-        return name.length > 0 && !['nan', 'non', 'null', 'undefined'].includes(name);
-      });
-
-      setHabits(validHabits as Habit[]);
-      if (logsData) setLogs(logsData as HabitLog[]);
-      
-      setLoading(false);
+      try {
+        const [habitsData, logsData] = await Promise.all([
+          api.get<Habit[]>('/habits'),
+          api.get<HabitLog[]>('/logs'),
+        ]);
+        setHabits(habitsData);
+        setLogs(logsData);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
   }, [isAuthenticated]);
 
   const addHabit = async (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => {
-    // Prevent creating habits with invalid names
-    const name = (habitData.name || '').trim();
-    if (!name || ['nan', 'non', 'null', 'undefined'].includes(name.toLowerCase())) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('habits')
-      .insert([{
-        ...habitData,
-        user_id: user.id,
-      }])
-      .select()
-      .single();
-
-    if (data && !error) {
-      setHabits(prev => [...prev, data as Habit]);
+    // Server silently returns null for an invalid/blank name instead of an
+    // error, same as the old client-side check did.
+    const created = await api.post<Habit | null>('/habits', habitData);
+    if (created) {
+      setHabits(prev => [...prev, created]);
     }
   };
 
   const updateHabit = async (id: string, updates: Partial<Habit>) => {
-    const { error } = await supabase
-      .from('habits')
-      .update(updates)
-      .eq('id', id);
-
-    if (!error) {
-      setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
-    }
+    await api.patch<Habit>(`/habits/${id}`, updates);
+    setHabits(prev => prev.map(h => (h.id === id ? { ...h, ...updates } : h)));
   };
-   
-  const deleteHabit = async (id: string) => {
-    const { error } = await supabase
-      .from('habits')
-      .delete()
-      .eq('id', id);
 
-    if (!error) {
-      setHabits(prev => prev.filter(h => h.id !== id));
-    }
+  const deleteHabit = async (id: string) => {
+    await api.delete(`/habits/${id}`);
+    setHabits(prev => prev.filter(h => h.id !== id));
   };
 
   const toggleHabitCompletion = async (habitId: string, date: string) => {
     const existingLog = logs.find(l => l.habit_id === habitId && l.date === date);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
+
     // OPTIMISTIC UPDATE: Update UI immediately
     if (existingLog) {
       setLogs(prev => prev.filter(l => l.id !== existingLog.id));
     } else {
-      // Create a temporary log for immediate display
       const tempLog: HabitLog = {
         id: `temp-${Date.now()}`,
         habit_id: habitId,
         date,
         status: 'completed',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       setLogs(prev => [...prev, tempLog]);
     }
 
     try {
-      if (existingLog) {
-        // DELETE from DB
-        const { error } = await supabase
-          .from('habit_logs')
-          .delete()
-          .eq('id', existingLog.id);
+      const result = await api.post<ToggleResponse>(`/habits/${habitId}/toggle`, { date });
 
-        if (error) throw error;
-      } else {
-        // INSERT into DB
-        const { data, error } = await supabase
-          .from('habit_logs')
-          .insert([{
-            habit_id: habitId,
-            date,
-            status: 'completed',
-            user_id: user.id
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Replace temp log with real log from DB
-        if (data) {
-          setLogs(prev => prev.map(l => l.id.startsWith('temp-') && l.habit_id === habitId && l.date === date ? (data as HabitLog) : l));
-        }
+      if (result.action === 'completed' && result.log) {
+        // Replace temp log with the real one from the server.
+        const realLog = result.log;
+        setLogs(prev =>
+          prev.map(l => (l.id.startsWith('temp-') && l.habit_id === habitId && l.date === date ? realLog : l))
+        );
       }
+      // For 'uncompleted' the optimistic removal above already matches
+      // server state, nothing further to reconcile.
     } catch (error) {
       console.error('Error toggling habit:', error);
       // REVERT optimistic update on error
@@ -164,13 +115,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const getHabitStatus = (habitId: string, date: string): 'completed' | 'missed' | 'skipped' | 'pending' => {
     const log = logs.find(l => l.habit_id === habitId && l.date === date);
-    return log ? log.status as any : 'pending';
+    return log ? log.status : 'pending';
   };
 
   return (
-    <DataContext.Provider value={{ 
-      habits, logs, loading, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus 
-    }}>
+    <DataContext.Provider
+      value={{ habits, logs, loading, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus }}
+    >
       {children}
     </DataContext.Provider>
   );
@@ -183,4 +134,3 @@ export const useData = () => {
   }
   return context;
 };
-

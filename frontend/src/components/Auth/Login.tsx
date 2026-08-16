@@ -97,26 +97,28 @@ export const Login = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    if (isRegistering) {
-      if (!username.trim()) {
-        setError('USER ID IS REQUIRED.');
-        setLoading(false);
-        return;
-      }
-      const { error: authError } = await register(email, password, username.trim());
-      if (authError) {
-        setError(authError.toUpperCase());
-      }
-    } else {
-      const { error: authError } = await login(identifier, password);
-      if (authError) {
-        setError(authError.toUpperCase());
-      }
+    if (isRegistering && !username.trim()) {
+      setError('USER ID IS REQUIRED.');
+      return;
     }
 
-    setLoading(false);
+    setLoading(true);
+    try {
+      const { error: authError } = isRegistering
+        ? await register(email, password, username.trim())
+        : await login(identifier, password);
+      if (authError) {
+        setError(authError.toUpperCase());
+      }
+    } catch (err) {
+      // Belt-and-suspenders: login/register are designed to always resolve
+      // with { error } rather than throw, but this guarantees the spinner
+      // can never get stuck even if that contract is ever broken.
+      setError(err instanceof Error ? err.message.toUpperCase() : 'SOMETHING WENT WRONG.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const moodLabels: Record<'elite' | 'solid' | 'slipping' | 'critical', { label: string; color: string; desc: string }> = {

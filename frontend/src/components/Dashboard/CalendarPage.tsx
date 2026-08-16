@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO, addYears } from 'date-fns';
 import { Check, X } from 'lucide-react';
-import { calculateDailyCompletion, calculateWeightedScore } from '../../utils/calculations';
+import { statsApi, type DayStat } from '../../lib/api';
 import { AppFooter } from '../UI/AppFooter';
 
 export const CalendarPage = () => {
@@ -29,11 +29,30 @@ export const CalendarPage = () => {
     return eachDayOfInterval({ start: yearStart, end: yearEnd });
   }, [yearStart, yearEnd]);
 
+  // Fetch the whole window's daily stats in one request instead of calling
+  // calculateWeightedScore per day client-side. Clamped to today since
+  // future days always render as "future" regardless of any stat.
+  const [dayStats, setDayStats] = useState<DayStat[]>([]);
+  useEffect(() => {
+    const clampedEnd = yearEnd > todayDate ? todayDate : yearEnd;
+    if (clampedEnd < yearStart) {
+      setDayStats([]);
+      return;
+    }
+    statsApi
+      .range(format(yearStart, 'yyyy-MM-dd'), format(clampedEnd, 'yyyy-MM-dd'))
+      .then(setDayStats)
+      .catch(() => setDayStats([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearStart, yearEnd, habits, logs]);
+
+  const statsByDate = useMemo(() => new Map(dayStats.map(d => [d.date, d])), [dayStats]);
+
   // Build heatmap data
   const heatmapData = useMemo(() => {
     return allDays.map(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const score = calculateWeightedScore(habits, logs, dateStr);
+      const score = statsByDate.get(dateStr)?.weighted_score ?? 0;
       const dayOfWeek = getDay(date); // 0=Sunday
       const futureDay = isFuture(date);
       const isPast = isBefore(startOfDay(date), todayDate) && dateStr !== todayStr;
@@ -45,9 +64,9 @@ export const CalendarPage = () => {
       else if (score >= 50) level = 2;
       else if (score > 0) level = 1;
 
-      return { date: dateStr, score: Math.round(score), level, dayOfWeek, isPast, futureDay };
+      return { date: dateStr, score, level, dayOfWeek, isPast, futureDay };
     });
-  }, [allDays, habits, logs, todayStr]);
+  }, [allDays, statsByDate, todayStr]);
 
   // Group into week columns (Sun=start)
   const weekColumns = useMemo(() => {
@@ -91,8 +110,8 @@ export const CalendarPage = () => {
     status: getHabitStatus(h.id, selectedDate)
   }));
 
-  const selectedDayCompletion = calculateDailyCompletion(habits, logs, selectedDate);
-  const selectedDayWeightedScore = calculateWeightedScore(habits, logs, selectedDate);
+  const selectedDayCompletion = statsByDate.get(selectedDate)?.completion_pct ?? 0;
+  const selectedDayWeightedScore = statsByDate.get(selectedDate)?.weighted_score ?? 0;
   const isPastDay = isBefore(new Date(selectedDate + 'T00:00:00'), todayDate) && selectedDate !== todayStr;
   const isFutureDay = isFuture(new Date(selectedDate + 'T00:00:00'));
 
@@ -102,13 +121,15 @@ export const CalendarPage = () => {
     const d = new Date(today);
     while (streak < 365) {
       const dateStr = format(d, 'yyyy-MM-dd');
-      if (calculateDailyCompletion(habits, logs, dateStr) > 0) {
+      const stat = statsByDate.get(dateStr);
+      if (stat && stat.completion_pct > 0) {
         streak++;
         d.setDate(d.getDate() - 1);
       } else break;
     }
     return streak;
-  }, [habits, logs, todayStr]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statsByDate, todayStr]);
 
   const totalActiveDays = useMemo(() => heatmapData.filter(d => d.score > 0).length, [heatmapData]);
   const totalMissedDays = useMemo(() => heatmapData.filter(d => d.isPast && d.score === 0).length, [heatmapData]);
