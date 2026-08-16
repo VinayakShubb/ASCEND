@@ -28,3 +28,10 @@ dist-ssr
 .env
 .env.local
 .env.*
+!.env.example
+
+# Python (backend)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
