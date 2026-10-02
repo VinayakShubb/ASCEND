@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useId, useState } from 'react';
 import './cipherAvatar.css';
 
 export type CipherMood = 'elite' | 'solid' | 'slipping' | 'critical' | 'analyzing' | 'idle';
@@ -12,7 +12,7 @@ export interface CipherAvatarProps {
 
 export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: CipherAvatarProps) => {
   const [blink, setBlink] = useState(false);
-  const uniqueId = useMemo(() => Math.random().toString(36).substring(2, 9), []);
+  const uniqueId = useId().replace(/:/g, '');
 
   const sizeMap = {
     sm: 32,

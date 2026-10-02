@@ -79,6 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const newSession: Session = { ...oauthTokens, user };
             setSession(newSession);
             setSessionState(newSession);
+            // App.tsx sends the user from the landing page into the app.
+            sessionStorage.setItem('ascend_after_oauth', '1');
           } else {
             clearSession();
           }
@@ -199,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

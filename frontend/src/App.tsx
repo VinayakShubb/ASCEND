@@ -1,97 +1,102 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { MotionConfig } from 'motion/react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { useAuth } from './context/AuthContext';
-import { Login } from './components/Auth/Login';
-import { MainLayout } from './components/Layout/MainLayout';
-import { AboutPage } from './components/Dashboard/AboutPage';
-import { DashboardPage } from './components/Dashboard/DashboardPage';
-import { HabitsPage } from './components/Dashboard/HabitsPage';
-import { CalendarPage } from './components/Dashboard/CalendarPage';
-import { AnalyticsPage } from './components/Dashboard/AnalyticsPage';
-import { CipherPage } from './components/Dashboard/CipherPage';
-import { SettingsPage } from './components/Dashboard/SettingsPage';
-import { LogicEnginePage } from './components/Dashboard/LogicEnginePage';
-import type { View } from './types';
+import { AppShell } from './layouts/AppShell';
+import { LandingPage } from './pages/landing/LandingPage';
+import { HowItWorksPage } from './pages/public/HowItWorksPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { SignupPage } from './pages/auth/SignupPage';
+import { TodayPage } from './pages/app/TodayPage';
+import { HabitsPage } from './pages/app/HabitsPage';
+import { CalendarPage } from './pages/app/CalendarPage';
+import { InsightsPage } from './pages/app/InsightsPage';
+import { CipherPage } from './pages/app/CipherPage';
+import { SettingsPage } from './pages/app/SettingsPage';
+import { NotFoundPage } from './pages/public/NotFoundPage';
+import { SplashScreen } from './components/brand/SplashScreen';
 
-const VALID_VIEWS: View[] = ['about', 'dashboard', 'habits', 'calendar', 'analytics', 'cipher', 'settings', 'logic-engine'];
+/* Old hash URLs (#dashboard, #cipher, ...) from before real routes. */
+const LEGACY_HASH_ROUTES: Record<string, string> = {
+  dashboard: '/app/today',
+  habits: '/app/habits',
+  calendar: '/app/calendar',
+  analytics: '/app/insights',
+  cipher: '/app/cipher',
+  settings: '/app/settings',
+  'logic-engine': '/how-it-works',
+  about: '/',
+};
 
-function getViewFromPath(): View {
-  const hash = window.location.hash.replace('#', '');
-  if (VALID_VIEWS.includes(hash as View)) {
-    return hash as View;
-  }
-  return 'about';
+function LegacyHashRedirect() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  useEffect(() => {
+    const key = location.hash.replace('#', '');
+    const target = LEGACY_HASH_ROUTES[key];
+    if (target && target !== location.pathname) navigate(target, { replace: true });
+  }, [location.hash, location.pathname, navigate]);
+  return null;
 }
 
-function App() {
-  const { isAuthenticated, loading } = useAuth();
-  const [currentView, setCurrentView] = useState<View>(getViewFromPath);
-
-  // Navigate to a view and push to browser history
-  const navigateTo = useCallback((view: View) => {
-    setCurrentView(view);
-    const newHash = `#${view}`;
-    // Only push if hash actually changed (avoid duplicates)
-    if (window.location.hash !== newHash) {
-      window.history.pushState({ view }, '', newHash);
-    }
-  }, []);
-
-  // On mount: set initial history entry and listen for popstate (back/forward)
+/* Sends a user who just came back from Google sign-in into the app. */
+function AfterOAuthRedirect() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
-    // Replace initial state so the first entry has our view data
-    const initialView = getViewFromPath();
-    window.history.replaceState({ view: initialView }, '', `#${initialView}`);
-
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.view) {
-        setCurrentView(event.state.view as View);
-      } else {
-        // Fallback: read from hash
-        setCurrentView(getViewFromPath());
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  if (loading) {
-    return <div style={{ background: '#0D0D0D', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>LOADING...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'about':
-        return <AboutPage setView={navigateTo} isAuthenticated={true} />;
-      case 'dashboard':
-        return <DashboardPage />;
-      case 'habits':
-        return <HabitsPage />;
-      case 'calendar':
-        return <CalendarPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
-      case 'cipher':
-        return <CipherPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'logic-engine':
-        return <LogicEnginePage setView={navigateTo} />;
-      default:
-        return <AboutPage setView={navigateTo} isAuthenticated={true} />;
+    if (isAuthenticated && sessionStorage.getItem('ascend_after_oauth')) {
+      sessionStorage.removeItem('ascend_after_oauth');
+      navigate('/app/today', { replace: true });
     }
-  };
+  }, [isAuthenticated, navigate]);
+  return null;
+}
 
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <SplashScreen />;
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <>{children}</>;
+}
+
+function GuestOnly({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <SplashScreen />;
+  if (isAuthenticated) return <Navigate to="/app/today" replace />;
+  return <>{children}</>;
+}
+
+export default function App() {
   return (
-    <MainLayout currentView={currentView} setView={navigateTo}>
-      {renderContent()}
-    </MainLayout>
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <LegacyHashRedirect />
+        <AfterOAuthRedirect />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
+          <Route path="/signup" element={<GuestOnly><SignupPage /></GuestOnly>} />
+          <Route
+            path="/app"
+            element={
+              <RequireAuth>
+                <AppShell />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<Navigate to="today" replace />} />
+            <Route path="today" element={<TodayPage />} />
+            <Route path="habits" element={<HabitsPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="insights" element={<InsightsPage />} />
+            <Route path="cipher" element={<CipherPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
-
-export default App;
