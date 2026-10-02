@@ -7,8 +7,8 @@ from pydantic import ValidationError
 
 import config
 from deps import derive_username, get_current_user, get_user_today
-from models.ai import BriefOutput, BriefRequest, CipherAnalysisOutput, CoachOutput
-from services import ai_brief, ai_coach, ai_generations
+from models.ai import BriefOutput, BriefRequest, CipherAnalysisV2, CoachOutput
+from services import ai_brief, ai_coach, ai_generations, cipher_analysis, cipher_metrics
 from services.user_data import get_habits, get_logs
 
 logger = logging.getLogger(__name__)
@@ -108,16 +108,25 @@ def get_coach(current_user: dict = Depends(get_current_user), today: date = Depe
     )
 
 
-@router.get("/cipher", response_model=Optional[CipherAnalysisOutput])
+def _is_current_cipher(output: dict) -> bool:
+    # Analyses stored before CIPHER v2 have a different shape; skip them.
+    return output.get("version") == cipher_analysis.VERSION
+
+
+@router.get("/cipher", response_model=Optional[CipherAnalysisV2])
 def get_cipher(
-    is_new_user: bool = Query(False),
+    is_new_user: bool = Query(False, description="Ignored; worked out from the account's age now."),
     current_user: dict = Depends(get_current_user),
     today: date = Depends(get_user_today),
 ):
-    """Runs a CIPHER analysis. Users can re-run it as their day progresses,
-    up to AI_CIPHER_DAILY_LIMIT times per local day. Past the limit, inside
-    the cooldown, or when nothing changed since the last run, the latest
-    stored analysis is returned instead of calling Groq again."""
+    """Runs a CIPHER analysis. Every number is computed in Python
+    (services/cipher_metrics.py); Groq only writes the commentary.
+
+    Users can re-run it as their day progresses, up to AI_CIPHER_DAILY_LIMIT
+    times per local day. Past the limit, inside the cooldown, or when nothing
+    changed since the last run, the latest stored analysis comes back instead
+    of a new Groq call. If Groq is down, the numbers are still returned, with
+    plain default sentences (narrative=false), and nothing is stored."""
     user_id = current_user["id"]
     username = derive_username(current_user["user_metadata"], current_user["email"])
     habits = get_habits(user_id)
@@ -126,35 +135,36 @@ def get_cipher(
     if not any(not h["archived"] for h in habits):
         return None
 
-    def generate() -> Optional[dict]:
-        analysis = ai_coach.get_cipher_analysis(
-            user_id=username,
-            user_created_at=current_user["created_at"],
-            habits=habits,
-            logs=logs,
-            is_new_user=is_new_user,
-            today=today,
-        )
-        return _validated(CipherAnalysisOutput, analysis)
+    metrics = cipher_metrics.compute_cipher_metrics(habits, logs, today, current_user["created_at"])
+    previous = ai_generations.latest(user_id, "cipher", _is_current_cipher)
+    previous_snapshot = previous["output"].get("snapshot") if previous else None
 
-    return ai_generations.get_or_generate(
+    def assemble(narrative: Optional[dict]) -> Optional[dict]:
+        analysis = cipher_analysis.build_analysis(username, metrics, narrative)
+        analysis["changes"] = cipher_metrics.changes_since(previous_snapshot, metrics["snapshot"])
+        return _validated(CipherAnalysisV2, analysis)
+
+    def generate() -> Optional[dict]:
+        narrative = cipher_analysis.generate_narrative(username, metrics)
+        return assemble(narrative) if narrative is not None else None
+
+    result = ai_generations.get_or_generate(
         user_id,
         "cipher",
         today,
-        _data_fingerprint(habits, logs, today.isoformat(), is_new_user),
+        _data_fingerprint(habits, logs, today.isoformat(), "cipher-v2"),
         generate,
         daily_limit=config.AI_CIPHER_DAILY_LIMIT,
         cooldown_seconds=config.AI_CIPHER_COOLDOWN_SECONDS,
         reuse_same_input=True,
-        # Each analysis carries its own analyzedAt, so an older one is still
-        # honest to show while Groq is down.
-        fall_back_to_older_days=True,
+        accept=_is_current_cipher,
     )
+    return result if result is not None else assemble(None)
 
 
-@router.get("/cipher/latest", response_model=Optional[CipherAnalysisOutput])
+@router.get("/cipher/latest", response_model=Optional[CipherAnalysisV2])
 def get_latest_cipher(current_user: dict = Depends(get_current_user)):
     """The most recent stored CIPHER analysis, without generating a new one.
     Lets the CIPHER page show the last analysis instantly on load."""
-    row = ai_generations.latest(current_user["id"], "cipher")
+    row = ai_generations.latest(current_user["id"], "cipher", _is_current_cipher)
     return row["output"] if row else None

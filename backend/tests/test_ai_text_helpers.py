@@ -81,38 +81,3 @@ class TestNormalizeDateMentions:
     def test_leaves_unrelated_text_untouched(self):
         text = "No dates mentioned here at all."
         assert ai_coach._normalize_date_mentions(text) == text
-
-
-class TestEnforceTimelineMath:
-    def _ctx(self, **overrides):
-        base = {
-            "user_id": "Shub",
-            "discipline_index": 75,
-            "best_day_date": "2026-02-20",
-            "best_day_score": 90,
-            "dead_streak_start_date": "",
-        }
-        base.update(overrides)
-        return base
-
-    def test_today_line_is_always_deterministic_regardless_of_ai_input(self):
-        result = ai_coach._enforce_timeline_math({"today": "the AI said whatever it wanted"}, self._ctx())
-        assert result["today"] == "Shub, today's Discipline Index (7-day average) is 75/100."
-
-    def test_best_day_gets_score_appended(self):
-        result = ai_coach._enforce_timeline_math({}, self._ctx())
-        assert "90/100" in result["2026-02-20"]
-
-    def test_index_terminology_replaced_on_non_today_dates(self):
-        comments = {"2026-02-15": "Your index was low that day."}
-        result = ai_coach._enforce_timeline_math(comments, self._ctx())
-        assert "index" not in result["2026-02-15"].lower()
-        assert "daily weighted score" in result["2026-02-15"].lower()
-
-    def test_dead_streak_date_included_when_present(self):
-        result = ai_coach._enforce_timeline_math({}, self._ctx(dead_streak_start_date="2026-02-10"))
-        assert "0/100" in result["2026-02-10"]
-
-    def test_dead_streak_key_omitted_when_no_dead_streak(self):
-        result = ai_coach._enforce_timeline_math({}, self._ctx(dead_streak_start_date=""))
-        assert "2026-02-10" not in result

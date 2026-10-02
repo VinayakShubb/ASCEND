@@ -11,7 +11,7 @@ import config
 import database
 import deps
 from main import app
-from services import ai_brief, ai_coach
+from services import ai_brief, ai_coach, cipher_analysis
 from tests.fakes import FakeSupabaseClient
 
 TZ = {"X-Timezone": "Asia/Kolkata"}
@@ -49,35 +49,29 @@ def client(fake_db):
     app.dependency_overrides.clear()
 
 
-def cipher_output(n: int) -> dict:
-    return {
-        "status": "solid",
-        "operatorVerdict": f"analysis {n}",
-        "timelineComments": {"today": "x"},
-        "executionType": "CONSISTENT BUILDER",
-        "personalityInsight": "p",
-        "hallOfFame": {"bestProtocol": "Gym", "bestProtocolComment": "c", "bestDayComment": "c"},
-        "hallOfShame": {"worstProtocol": "Gym", "worstProtocolComment": "c", "worstStreakComment": "c"},
-        "lowlightsComments": {"longestDeadStreak": "a", "worstDay": "b", "mostBrokenHabit": "c", "biggestDrop": "d"},
-        "ceilingInsight": "c",
-        "biggestMistakeName": "m",
-        "biggestMistake": "m",
-        "biggestWinName": "w",
-        "biggestWin": "w",
-        "orders": [{"rank": 1, "action": "a", "estimatedImpact": "+2"}],
-        "analyzedAt": "2026-10-02T10:00:00+00:00",
-    }
+def stored_cipher(verdict: str, user_id: str = "user-1", local_date: str = "2026-01-05",
+                  created_at: str = "2026-01-05T08:00:00+00:00", version: int = 2) -> dict:
+    """A stored ai_generations row holding a CIPHER analysis."""
+    from services import cipher_analysis, cipher_metrics
+
+    habits = [{"id": "h1", "name": "Gym", "difficulty": "medium", "archived": False}]
+    m = cipher_metrics.compute_cipher_metrics(habits, [], datetime.now(timezone.utc).date(), "2026-01-01T00:00:00Z")
+    output = cipher_analysis.build_analysis("ShubV", m, {"verdict": verdict})
+    output["version"] = version
+    return {"id": f"g-{verdict}", "user_id": user_id, "feature": "cipher", "local_date": local_date,
+            "input_hash": "x", "output": output, "created_at": created_at}
 
 
 @pytest.fixture
 def cipher_calls(monkeypatch):
+    """Replaces the Groq narrative call; each call returns verdict "analysis N"."""
     calls = []
 
-    def fake_analysis(**kwargs):
-        calls.append(kwargs)
-        return cipher_output(len(calls))
+    def fake_narrative(username, metrics):
+        calls.append(metrics)
+        return {"verdict": f"analysis {len(calls)}"}
 
-    monkeypatch.setattr(ai_coach, "get_cipher_analysis", fake_analysis)
+    monkeypatch.setattr(cipher_analysis, "generate_narrative", fake_narrative)
     monkeypatch.setattr(config, "AI_CIPHER_COOLDOWN_SECONDS", 0)
     return calls
 
@@ -183,8 +177,8 @@ def test_cipher_regenerates_when_the_users_data_changes(client, fake_db, cipher_
     add_log(fake_db, "2026-09-30")
     second = client.get("/ai/cipher", headers=TZ).json()
 
-    assert first["operatorVerdict"] == "analysis 1"
-    assert second["operatorVerdict"] == "analysis 2"
+    assert first["verdict"] == "analysis 1."
+    assert second["verdict"] == "analysis 2."
     assert len(cipher_calls) == 2
 
 
@@ -192,7 +186,7 @@ def test_cipher_reuses_the_last_analysis_when_nothing_changed(client, cipher_cal
     client.get("/ai/cipher", headers=TZ)
     again = client.get("/ai/cipher", headers=TZ).json()
 
-    assert again["operatorVerdict"] == "analysis 1"
+    assert again["verdict"] == "analysis 1."
     assert len(cipher_calls) == 1
 
 
@@ -202,11 +196,11 @@ def test_cipher_stops_calling_groq_after_the_daily_limit(client, fake_db, cipher
     results = []
     for day in range(5):
         add_log(fake_db, f"2026-09-{10 + day}")
-        results.append(client.get("/ai/cipher", headers=TZ).json()["operatorVerdict"])
+        results.append(client.get("/ai/cipher", headers=TZ).json()["verdict"])
 
     assert len(cipher_calls) == 3
     # Past the limit the user just keeps seeing the latest analysis.
-    assert results == ["analysis 1", "analysis 2", "analysis 3", "analysis 3", "analysis 3"]
+    assert results == ["analysis 1.", "analysis 2.", "analysis 3.", "analysis 3.", "analysis 3."]
 
 
 def test_cipher_cooldown_returns_the_previous_analysis(client, fake_db, cipher_calls, monkeypatch):
@@ -218,33 +212,42 @@ def test_cipher_cooldown_returns_the_previous_analysis(client, fake_db, cipher_c
     age_generations(fake_db, 11)
     after_cooldown = client.get("/ai/cipher", headers=TZ).json()
 
-    assert inside_cooldown["operatorVerdict"] == "analysis 1"
-    assert after_cooldown["operatorVerdict"] == "analysis 2"
+    assert inside_cooldown["verdict"] == "analysis 1."
+    assert after_cooldown["verdict"] == "analysis 2."
 
 
-def test_cipher_shows_the_last_analysis_when_groq_is_down(client, fake_db, monkeypatch):
-    fake_db.tables["ai_generations"].append(
-        {"id": "g0", "user_id": "user-1", "feature": "cipher", "local_date": "2026-01-05", "input_hash": "x",
-         "output": cipher_output(99), "created_at": "2026-01-05T08:00:00+00:00"}
-    )
-    monkeypatch.setattr(ai_coach, "get_cipher_analysis", lambda **kwargs: None)
+def test_cipher_still_returns_fresh_numbers_when_groq_is_down(client, fake_db, monkeypatch):
+    monkeypatch.setattr(cipher_analysis, "generate_narrative", lambda username, metrics: None)
 
     response = client.get("/ai/cipher", headers=TZ).json()
 
-    assert response["operatorVerdict"] == "analysis 99"
+    assert response["narrative"] is False
+    assert response["score"]["value"] == 0
+    assert response["verdict"].startswith("ShubV,")
+    assert fake_db.tables["ai_generations"] == []  # the plain version isn't stored
+
+
+def test_cipher_ignores_analyses_stored_in_the_old_format(client, fake_db, cipher_calls):
+    old = stored_cipher("old format", version=1)
+    old["local_date"] = datetime.now(timezone.utc).date().isoformat()
+    old["created_at"] = datetime.now(timezone.utc).isoformat()
+    fake_db.tables["ai_generations"].append(old)
+
+    assert client.get("/ai/cipher/latest").json() is None
+    assert client.get("/ai/cipher").json()["verdict"] == "analysis 1."
 
 
 def test_cipher_limits_are_per_user(client, fake_db, cipher_calls, monkeypatch):
     monkeypatch.setattr(config, "AI_CIPHER_DAILY_LIMIT", 1)
     fake_db.tables["ai_generations"].append(
-        {"id": "g0", "user_id": "someone-else", "feature": "cipher",
-         "local_date": datetime.now(timezone.utc).date().isoformat(), "input_hash": "x",
-         "output": cipher_output(50), "created_at": datetime.now(timezone.utc).isoformat()}
+        stored_cipher("someone else", user_id="someone-else",
+                      local_date=datetime.now(timezone.utc).date().isoformat(),
+                      created_at=datetime.now(timezone.utc).isoformat())
     )
 
     response = client.get("/ai/cipher").json()
 
-    assert response["operatorVerdict"] == "analysis 1"
+    assert response["verdict"] == "analysis 1."
 
 
 def test_cipher_latest_returns_stored_analysis_without_generating(client, fake_db, cipher_calls):
@@ -253,15 +256,19 @@ def test_cipher_latest_returns_stored_analysis_without_generating(client, fake_d
     client.get("/ai/cipher", headers=TZ)
     latest = client.get("/ai/cipher/latest").json()
 
-    assert latest["operatorVerdict"] == "analysis 1"
+    assert latest["verdict"] == "analysis 1."
     assert len(cipher_calls) == 1
 
 
-def test_cipher_uses_the_users_local_date(client, cipher_calls):
-    client.get("/ai/cipher", headers={"X-Timezone": "Pacific/Kiritimati"})
+def test_cipher_shows_what_changed_since_the_previous_analysis(client, fake_db, cipher_calls):
+    client.get("/ai/cipher", headers=TZ)
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+    add_log(fake_db, today.isoformat())
+    second = client.get("/ai/cipher", headers=TZ).json()
 
-    expected = datetime.now(timezone(timedelta(hours=14))).date()
-    assert cipher_calls[0]["today"] == expected
+    labels = {c["label"]: c for c in second["changes"]}
+    assert labels["Done today"]["delta"] == "+1"
+    assert labels["Discipline Index"]["direction"] == "up"
 
 
 def test_ai_still_works_if_the_ai_generations_table_is_missing(client, fake_db, cipher_calls, monkeypatch):
@@ -279,4 +286,4 @@ def test_ai_still_works_if_the_ai_generations_table_is_missing(client, fake_db, 
     response = client.get("/ai/cipher", headers=TZ)
 
     assert response.status_code == 200
-    assert response.json()["operatorVerdict"] == "analysis 1"
+    assert response.json()["verdict"] == "analysis 1."

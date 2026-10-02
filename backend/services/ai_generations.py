@@ -54,11 +54,18 @@ def _rows_for_day(user_id: str, feature: str, local_date: date) -> list[dict]:
     )
 
 
-def latest(user_id: str, feature: str) -> Optional[dict]:
-    """Most recent stored row for this feature on any day."""
+def latest(user_id: str, feature: str, accept: Optional[Callable[[dict], bool]] = None) -> Optional[dict]:
+    """Most recent stored row for this feature on any day. With `accept`,
+    the most recent row whose output passes it (e.g. a current format)."""
     rows = _query(
-        lambda t: t.select("*").eq("user_id", user_id).eq("feature", feature).order("created_at", desc=True).limit(1)
+        lambda t: t.select("*")
+        .eq("user_id", user_id)
+        .eq("feature", feature)
+        .order("created_at", desc=True)
+        .limit(1 if accept is None else 20)
     )
+    if accept is not None:
+        rows = [r for r in rows if accept(r.get("output") or {})]
     return rows[0] if rows else None
 
 
@@ -103,6 +110,7 @@ def get_or_generate(
     cooldown_seconds: int = 0,
     reuse_same_input: bool = False,
     fall_back_to_older_days: bool = False,
+    accept: Optional[Callable[[dict], bool]] = None,
 ) -> Optional[dict]:
     """Returns a stored result when one should be reused, otherwise calls
     `generate()` and stores what it returns.
@@ -116,8 +124,13 @@ def get_or_generate(
     `generate()` returning None means Groq failed. Nothing is stored and
     today's latest stored result is returned instead, or, with
     `fall_back_to_older_days`, the latest from any day (or None).
+
+    `accept` ignores stored rows whose output fails it (e.g. results saved in
+    an older format); they neither count toward the limit nor get reused.
     """
     today_rows = _rows_for_day(user_id, feature, local_date)
+    if accept is not None:
+        today_rows = [r for r in today_rows if accept(r.get("output") or {})]
     newest_today = today_rows[0] if today_rows else None
 
     if newest_today:
@@ -130,7 +143,7 @@ def get_or_generate(
 
     output = generate()
     if output is None:
-        fallback = newest_today or (latest(user_id, feature) if fall_back_to_older_days else None)
+        fallback = newest_today or (latest(user_id, feature, accept) if fall_back_to_older_days else None)
         return fallback["output"] if fallback else None
 
     _store(user_id, feature, local_date, fingerprint, output)
