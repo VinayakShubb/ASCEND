@@ -220,26 +220,56 @@ export interface CoachOutput {
   action: string;
 }
 
-export interface CipherAnalysisOutput {
+// CIPHER v2: every number is computed by the backend
+// (backend/services/cipher_metrics.py); the AI only writes the notes.
+export type Trend = 'up' | 'down' | 'flat';
+
+export interface CipherMetric {
+  key: string;
+  label: string;
+  value: string;
+  caption: string;
+  baseline: string;
+  trend: Trend;
+}
+
+export interface CipherHabit {
+  name: string;
+  rate7: number;
+  rate30: number;
+  trend: Trend;
+  streak: number;
+  pointsLost7: number;
+  note: string;
+}
+
+export interface CipherAnalysis {
+  version: 2;
+  analyzedAt: string;
+  narrative: boolean;
   status: CipherStatus;
-  operatorVerdict: string;
-  timelineComments: Record<string, string>;
-  executionType: string;
-  personalityInsight: string;
-  hallOfFame: { bestProtocol: string; bestProtocolComment: string; bestDayComment: string };
-  hallOfShame: { worstProtocol: string; worstProtocolComment: string; worstStreakComment: string };
-  lowlightsComments: { longestDeadStreak: string; worstDay: string; mostBrokenHabit: string; biggestDrop: string };
-  ceilingInsight: string;
-  biggestMistakeName: string;
-  biggestMistake: string;
-  biggestWinName: string;
-  biggestWin: string;
-  orders: Array<{ rank: number; action: string; estimatedImpact: string }>;
-  analyzedAt?: string;
+  isNewUser: boolean;
+  daysTracked: number;
+  score: { value: number; baseline: number; weekAgo: number; momentum: number; maxToday: number };
+  metrics: CipherMetric[];
+  verdict: string;
+  personality: { type: string; tagline: string; evidence: string; insight: string };
+  working: CipherHabit[];
+  holdingBack: CipherHabit[];
+  weekdays: Array<{ day: string; pct: number | null; samples: number }>;
+  bestWeekday: string | null;
+  worstWeekday: string | null;
+  patternNote: string;
+  plan: Array<{ habitId: string; name: string; impact: number; action: string }>;
+  changes: Array<{ label: string; delta: string; direction: 'up' | 'down' }>;
 }
 
 export const aiApi = {
   brief: (recentQuotes: string[]) => api.post<BriefOutput | null>('/ai/brief', { recent_quotes: recentQuotes }),
   coach: () => api.get<CoachOutput | null>('/ai/coach'),
-  cipher: (isNewUser: boolean) => api.get<CipherAnalysisOutput | null>(`/ai/cipher?is_new_user=${isNewUser}`),
+  // Runs a new analysis (the server may return the latest one instead when the
+  // daily limit is reached or nothing changed).
+  cipher: () => api.get<CipherAnalysis | null>('/ai/cipher'),
+  // The last stored analysis, without generating: shown instantly on page load.
+  cipherLatest: () => api.get<CipherAnalysis | null>('/ai/cipher/latest'),
 };

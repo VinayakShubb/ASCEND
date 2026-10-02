@@ -7,7 +7,6 @@
 
 const BRIEF_CACHE_VERSION = 'v2';
 const COACH_CACHE_VERSION = 'v2';
-const CIPHER_CACHE_VERSION = 'v4';
 
 interface CachedBrief<T> {
   date: string;
@@ -69,5 +68,3 @@ export const todayKey = () => new Date().toDateString();
 export const getCoachCache = <T>(userId: string) => getDayCache<T>('ascend_ai_coach', COACH_CACHE_VERSION, userId, todayKey());
 export const setCoachCache = <T>(userId: string, value: T) => setDayCache('ascend_ai_coach', COACH_CACHE_VERSION, userId, todayKey(), value);
 
-export const getCipherCache = <T>(userId: string) => getDayCache<T>('ascend_ai_cipher', CIPHER_CACHE_VERSION, userId, todayKey());
-export const setCipherCache = <T>(userId: string, value: T) => setDayCache('ascend_ai_cipher', CIPHER_CACHE_VERSION, userId, todayKey(), value);
