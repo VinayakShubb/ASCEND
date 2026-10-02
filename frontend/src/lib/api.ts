@@ -235,6 +235,8 @@ export interface CipherMetric {
 
 export interface CipherHabit {
   name: string;
+  status: 'on track' | 'building' | 'slipping';
+  done7: number;
   rate7: number;
   rate30: number;
   trend: Trend;
@@ -244,7 +246,7 @@ export interface CipherHabit {
 }
 
 export interface CipherAnalysis {
-  version: 2;
+  version: 3;
   analyzedAt: string;
   narrative: boolean;
   status: CipherStatus;
@@ -252,7 +254,15 @@ export interface CipherAnalysis {
   daysTracked: number;
   score: { value: number; baseline: number; weekAgo: number; momentum: number; maxToday: number };
   metrics: CipherMetric[];
+  daily7: Array<{ date: string; day: string; score: number; isToday: boolean }>;
+  headline: string;
   verdict: string;
+  strengths: string;
+  risks: string;
+  weeklyFocus: string;
+  focus: { name: string; current: number; target: number; projectedDi: number } | null;
+  atRisk: Array<{ name: string; streak: number }>;
+  habits: CipherHabit[];
   personality: { type: string; tagline: string; evidence: string; insight: string };
   working: CipherHabit[];
   holdingBack: CipherHabit[];

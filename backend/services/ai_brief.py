@@ -16,17 +16,6 @@ VALID_STATUSES = {"elite", "solid", "slipping", "critical"}
 BRIEF_GRACE_DAYS = 3
 
 
-def _get_days_since_registration(created_at: Optional[str], today: Optional[date] = None) -> int:
-    if not created_at:
-        return 1
-    try:
-        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-    except ValueError:
-        return 1
-    today = today or datetime.now(timezone.utc).date()
-    return max(1, (today - parsed.date()).days + 1)
-
-
 def _get_status_from_index(discipline_index: int, is_grace_period: bool) -> str:
     if discipline_index >= 80:
         return "elite"
@@ -113,7 +102,7 @@ def get_daily_brief(
 
     active_habits = [h for h in habits if not h["archived"]]
     habit_intent_context = habit_intent.build_habit_intent_context(active_habits)
-    days_since_registration = _get_days_since_registration(created_at, today)
+    days_since_registration = (today - calculations.tracking_start_date(created_at, logs, today)).days + 1
     is_grace_period = days_since_registration <= BRIEF_GRACE_DAYS
     discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
     today_weighted_score = round(calculations.calculate_weighted_score(habits, logs, today_str))

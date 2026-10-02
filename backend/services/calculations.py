@@ -5,7 +5,7 @@ Supabase returns) rather than custom classes -- there's no behavior here
 that needs a class, just functions over lists of dicts.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 DIFFICULTY_MULTIPLIERS = {
@@ -89,3 +89,19 @@ def get_streak(habit_id: str, logs: list[dict], current_date_str: Optional[str] 
         check_date -= timedelta(days=1)
 
     return streak
+
+
+def tracking_start_date(created_at: Optional[str], logs: list[dict], today: date) -> date:
+    """The day this user's history starts: the earlier of account creation and
+    their first completed log (data can predate the account, e.g. imported or
+    seeded history). Never after `today`."""
+    start = today
+    if created_at:
+        try:
+            start = min(start, datetime.fromisoformat(str(created_at).replace("Z", "+00:00")).date())
+        except ValueError:
+            pass
+    log_dates = [l["date"] for l in logs if l.get("status") == "completed"]
+    if log_dates:
+        start = min(start, date.fromisoformat(min(log_dates)))
+    return start

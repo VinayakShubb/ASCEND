@@ -49,6 +49,8 @@ class CipherMetric(BaseModel):
 
 class CipherHabit(BaseModel):
     name: str
+    status: Literal["on track", "building", "slipping"]
+    done7: int
     rate7: int
     rate30: int
     trend: Trend
@@ -77,6 +79,25 @@ class CipherPlanItem(BaseModel):
     action: str
 
 
+class CipherDay(BaseModel):
+    date: str
+    day: str
+    score: int
+    isToday: bool
+
+
+class CipherStreakRisk(BaseModel):
+    name: str
+    streak: int
+
+
+class CipherFocus(BaseModel):
+    name: str
+    current: int
+    target: int
+    projectedDi: int
+
+
 class CipherChange(BaseModel):
     label: str
     delta: str
@@ -84,7 +105,7 @@ class CipherChange(BaseModel):
 
 
 class CipherAnalysisV2(BaseModel):
-    version: Literal[2]
+    version: Literal[3]
     analyzedAt: str
     narrative: bool
     status: Status
@@ -92,10 +113,18 @@ class CipherAnalysisV2(BaseModel):
     daysTracked: int
     score: CipherScore
     metrics: List[CipherMetric]
+    daily7: List[CipherDay]
+    headline: str
     verdict: str
+    strengths: str
+    risks: str
+    weeklyFocus: str
+    focus: Optional[CipherFocus] = None
+    atRisk: List[CipherStreakRisk]
     personality: CipherPersonality
     working: List[CipherHabit]
     holdingBack: List[CipherHabit]
+    habits: List[CipherHabit]
     weekdays: List[CipherWeekday]
     bestWeekday: Optional[str] = None
     worstWeekday: Optional[str] = None

@@ -214,3 +214,62 @@ def test_prompt_contains_only_computed_numbers_and_no_old_jargon(metrics):
     assert str(metrics["score"]["value"]) in prompt
     assert "Gym" in prompt and "Read" in prompt
     assert "operator" not in prompt.split("Do not use the words")[0].lower()
+
+
+# --- Tracking start, streak risk, weekly focus, 7-day trend ---------------
+
+def test_history_before_the_account_was_created_still_counts():
+    # e.g. imported or seeded history: logs going back 40 days on an account
+    # created today must not be treated as a brand-new user.
+    m = compute([habit("g", "Gym")], logs_for("g", range(0, 40)), registered_days_ago=0)
+
+    assert m["daysTracked"] == 40
+    assert m["isNewUser"] is False
+    assert m["personality"]["type"] != "CALIBRATING"
+
+
+def test_tracking_start_is_the_earlier_of_signup_and_first_log():
+    logs = logs_for("g", [3])
+    start = calculations.tracking_start_date("2026-09-01T10:00:00Z", logs, TODAY)
+    assert start == date(2026, 9, 1)
+    assert calculations.tracking_start_date(None, logs, TODAY) == TODAY - timedelta(days=3)
+    assert calculations.tracking_start_date(None, [], TODAY) == TODAY
+
+
+def test_streaks_at_risk_are_alive_streaks_not_done_today():
+    habits = [habit("g", "Gym"), habit("r", "Read"), habit("m", "Meditate")]
+    logs = logs_for("g", [1, 2, 3, 4]) + logs_for("r", [0, 1, 2]) + logs_for("m", [1])
+
+    m = compute(habits, logs)
+
+    assert m["atRisk"] == [{"name": "Gym", "streak": 4}]
+
+
+def test_weekly_focus_targets_the_biggest_di_gain_and_projects_it():
+    habits = [habit("e", "Walk", "easy"), habit("x", "Deep work", "extreme")]
+    logs = logs_for("e", [0, 1, 2]) + logs_for("x", [1])
+
+    m = compute(habits, logs)
+    focus = m["focus"]
+
+    assert focus["name"] == "Deep work"
+    assert focus["current"] == 1
+    assert focus["target"] == 4
+    x = next(h for h in m["habits"] if h["name"] == "Deep work")
+    assert focus["projectedDi"] == min(100, round(m["score"]["value"] + x["pointValue"] * 3))
+
+
+def test_daily7_is_seven_days_ending_today():
+    m = compute([habit("g", "Gym")], logs_for("g", [0, 2]))
+
+    assert [d["isToday"] for d in m["daily7"]] == [False] * 6 + [True]
+    assert m["daily7"][-1]["score"] == 100
+    assert m["daily7"][-2]["score"] == 0
+
+
+def test_every_habit_gets_a_note_and_status_even_without_ai(metrics):
+    analysis = cipher_analysis.build_analysis("Vinayak", metrics, None)
+
+    assert {h["name"] for h in analysis["habits"]} == {"Gym", "Read"}
+    assert all(h["note"] and h["status"] in ("on track", "building", "slipping") for h in analysis["habits"])
+    assert analysis["headline"] and analysis["strengths"] and analysis["risks"]

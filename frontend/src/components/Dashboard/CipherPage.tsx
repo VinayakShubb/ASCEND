@@ -240,6 +240,7 @@ export const CipherPage = () => {
             <ScoreRing value={analysis.score.value} color={status.color} />
             <div className="cx-hero-body">
               <span className="cx-status-pill">{status.label}</span>
+              <h2 className="cx-headline">{analysis.headline}</h2>
               <p className="cx-verdict">{analysis.verdict}</p>
               <dl className="cx-baselines">
                 <div><dt>30-day average</dt><dd>{analysis.score.baseline}</dd></div>
@@ -254,6 +255,16 @@ export const CipherPage = () => {
                 </div>
                 <div><dt>Max possible today</dt><dd>{analysis.score.maxToday}</dd></div>
               </dl>
+              <div className="cx-week" aria-label="Daily score, last 7 days">
+                {analysis.daily7.map(d => (
+                  <div key={d.date} className={`cx-week-day${d.isToday ? ' is-today' : ''}`} title={`${d.day}: ${d.score}`}>
+                    <div className="cx-week-bar">
+                      <div style={{ height: `${Math.max(4, d.score)}%`, background: d.isToday ? 'var(--text-secondary)' : status.color }} />
+                    </div>
+                    <span>{d.isToday ? 'Today' : d.day}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -299,6 +310,17 @@ export const CipherPage = () => {
                 style={{ left: `${analysis.score.value}%`, width: `${Math.max(0, analysis.score.maxToday - analysis.score.value)}%` }}
               />
             </div>
+            {analysis.atRisk.length > 0 && (
+              <div className="cx-risk">
+                <Flame size={15} />
+                <span>
+                  On the line tonight:{' '}
+                  {analysis.atRisk.map((r, i) => (
+                    <span key={r.name}>{i > 0 && ', '}<strong>{r.name}</strong> ({r.streak}-day streak)</span>
+                  ))}
+                </span>
+              </div>
+            )}
             {analysis.plan.length === 0 ? (
               <p className="cx-done"><Check size={16} /> Everything is done today. Your score is at today's maximum.</p>
             ) : (
@@ -317,11 +339,43 @@ export const CipherPage = () => {
             )}
           </section>
 
+          {/* This week's focus */}
+          {analysis.focus && (
+            <section className="cx-card cx-focus cx-reveal">
+              <div className="cx-focus-main">
+                <span className="cx-eyebrow">This week's focus</span>
+                <h2>{analysis.focus.name}</h2>
+                <div className="cx-dots" aria-label={`${analysis.focus.current} of 7 days now, target ${analysis.focus.target}`}>
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <span
+                      key={i}
+                      className={i < analysis.focus!.current ? 'is-done' : i < analysis.focus!.target ? 'is-target' : ''}
+                    />
+                  ))}
+                </div>
+                <span className="cx-dots-caption">
+                  {analysis.focus.current} of 7 days now, target {analysis.focus.target}
+                </span>
+                {analysis.weeklyFocus && <p>{analysis.weeklyFocus}</p>}
+              </div>
+              <div className="cx-projection">
+                <span>Projected Discipline Index</span>
+                <div>
+                  <strong>{analysis.score.value}</strong>
+                  <ArrowUpRight size={20} color={TREND_COLOR.up} />
+                  <strong style={{ color: TREND_COLOR.up }}>{analysis.focus.projectedDi}</strong>
+                </div>
+                <small>if you hit the target</small>
+              </div>
+            </section>
+          )}
+
           {/* Drivers */}
           {(analysis.working.length > 0 || analysis.holdingBack.length > 0) && (
             <div className="cx-split cx-reveal">
               <section className="cx-card is-good">
                 <div className="cx-card-head"><h2>What's working</h2></div>
+                <p className="cx-lead">{analysis.strengths}</p>
                 {analysis.working.length === 0
                   ? <p className="cx-muted">Nothing above 50% this week yet. One habit done 4 of 7 days changes that.</p>
                   : analysis.working.map(h => (
@@ -337,6 +391,7 @@ export const CipherPage = () => {
               </section>
               <section className="cx-card is-bad">
                 <div className="cx-card-head"><h2>Holding you back</h2></div>
+                <p className="cx-lead">{analysis.risks}</p>
                 {analysis.holdingBack.length === 0
                   ? <p className="cx-muted">No missed days cost you points this week. Keep it that way.</p>
                   : analysis.holdingBack.map(h => (
@@ -352,6 +407,31 @@ export const CipherPage = () => {
               </section>
             </div>
           )}
+
+          {/* Every habit */}
+          <section className="cx-card cx-reveal">
+            <div className="cx-card-head">
+              <h2>Habit breakdown</h2>
+              <span className="cx-card-sub">All active habits, this week vs your 30-day average</span>
+            </div>
+            <ul className="cx-breakdown">
+              {analysis.habits.map(h => (
+                <li key={h.name}>
+                  <div className="cx-breakdown-top">
+                    <strong>{h.name}</strong>
+                    <span className={`cx-chip is-${h.status.replace(' ', '-')}`}>{h.status}</span>
+                  </div>
+                  <div className="cx-breakdown-stats">
+                    <span><b>{h.done7}/7</b> this week</span>
+                    <span><b>{h.rate30}%</b> 30-day</span>
+                    <span><b>{h.streak}d</b> streak</span>
+                    <span className="cx-breakdown-trend"><TrendIcon trend={h.trend} /> {h.trend === 'up' ? 'improving' : h.trend === 'down' ? 'dropping' : 'steady'}</span>
+                  </div>
+                  <p>{h.note}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
 
           {/* Weekly rhythm */}
           <section className="cx-card cx-reveal">

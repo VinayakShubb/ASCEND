@@ -10,7 +10,7 @@ user isn't penalised for days before they signed up. The Discipline Index
 itself keeps its documented definition (always the last 7 days).
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Optional
 
 from services import calculations
@@ -33,16 +33,6 @@ PERSONALITY_TAGLINES = {
     "COMEBACK KID": "You fall off, and you keep coming back. That matters.",
     "CONSISTENT BUILDER": "Steady, day after day. This is the hardest pattern to build.",
 }
-
-
-def _registration_date(created_at: Optional[str], today: date) -> date:
-    if not created_at:
-        return today
-    try:
-        parsed = datetime.fromisoformat(str(created_at).replace("Z", "+00:00")).date()
-    except ValueError:
-        return today
-    return min(parsed, today)
 
 
 def _window(today: date, days: int, start_limit: date) -> list[date]:
@@ -165,7 +155,7 @@ def _personality(day_rows: list[dict], habit_stats: list[dict], days_tracked: in
 def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, created_at: Optional[str]) -> dict:
     active = [h for h in habits if not h["archived"]]
     today_str = today.isoformat()
-    reg_date = _registration_date(created_at, today)
+    reg_date = calculations.tracking_start_date(created_at, logs, today)
     days_tracked = (today - reg_date).days + 1
     is_new_user = days_tracked <= NEW_USER_DAYS
 
@@ -212,6 +202,9 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         done_today = today_str in completed
         habit_stats.append(
             {
+                "status": "on track" if rate7 >= 70 else "building" if rate7 >= 40 else "slipping",
+                "done7": sum(1 for d in w7 if d.isoformat() in completed),
+                "pointValue": point_value,
                 "id": h["id"],
                 "name": h["name"],
                 "difficulty": h["difficulty"],
@@ -254,6 +247,36 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         worst = min(rated, key=lambda w: w["pct"])
         if best["pct"] != worst["pct"]:
             best_weekday, worst_weekday = best["day"], worst["day"]
+
+    # --- Last 7 days of daily scores (today is still in progress) ---------
+    daily7 = [
+        {
+            "date": (today - timedelta(days=i)).isoformat(),
+            "day": WEEKDAY_NAMES[(today - timedelta(days=i)).weekday()],
+            "score": round(calculations.calculate_weighted_score(habits, logs, (today - timedelta(days=i)).isoformat())),
+            "isToday": i == 0,
+        }
+        for i in range(6, -1, -1)
+    ]
+
+    # --- Streaks that end tonight if the habit is skipped -----------------
+    at_risk = [
+        {"name": h["name"], "streak": h["streak"]}
+        for h in sorted(habit_stats, key=lambda h: -h["streak"])
+        if h["streak"] >= 2 and not h["doneToday"]
+    ][:3]
+
+    # --- This week's focus: the habit whose fix moves DI most -------------
+    focus = None
+    candidates = sorted(
+        (h for h in habit_stats if h["done7"] < len(w7)),
+        key=lambda h: (-h["pointValue"] * (min(7, max(h["done7"] + 2, 4)) - h["done7"]), h["rate7"]),
+    )
+    if candidates and len(w7) >= 3:
+        h = candidates[0]
+        target = min(7, max(h["done7"] + 2, 4))
+        projected = min(100, round(di + h["pointValue"] * (target - h["done7"])))
+        focus = {"name": h["name"], "current": h["done7"], "target": target, "projectedDi": projected}
 
     # --- Headline metrics, each against the user's own baseline -----------
     top_streak = max(habit_stats, key=lambda h: h["streak"], default=None)
@@ -314,6 +337,9 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         "bestWeekday": best_weekday,
         "worstWeekday": worst_weekday,
         "personality": _personality(day_rows, habit_stats, days_tracked),
+        "daily7": daily7,
+        "atRisk": at_risk,
+        "focus": focus,
         "snapshot": {
             "di": di,
             "completion7": completion7,
