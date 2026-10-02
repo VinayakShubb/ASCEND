@@ -78,6 +78,20 @@ def test_returns_none_without_any_key(monkeypatch):
     assert groq_client.call_groq("hi") is None
 
 
+def test_key_lists_pasted_with_newlines_are_split(monkeypatch):
+    import importlib
+
+    monkeypatch.setenv("GROQ_API_KEYS", "")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_one,
+gsk_two")
+    reloaded = importlib.reload(config)
+    try:
+        assert reloaded.GROQ_API_KEYS == ["gsk_one", "gsk_two"]
+    finally:
+        monkeypatch.setenv("GROQ_API_KEY", "")
+        importlib.reload(config)
+
+
 def test_legacy_single_key_variable_is_still_read(monkeypatch):
     import importlib
 

@@ -1,11 +1,15 @@
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 def _split_list(raw: str) -> list[str]:
-    return [item.strip() for item in raw.split(",") if item.strip()]
+    # Commas, spaces and newlines all separate items, so a value pasted as
+    # "key1,
+key2" in a dashboard still parses.
+    return [item for item in re.split(r"[\s,]+", raw) if item]
 
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -14,12 +18,13 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 
 # Groq keys, tried in order: the first one is the main key, the rest are only
 # used when the one before it fails (rate limit, revoked key, Groq outage).
-# GROQ_API_KEYS takes a comma-separated list; the older single GROQ_API_KEY
-# still works and is appended if it isn't already in the list.
-GROQ_API_KEYS: list[str] = _split_list(os.environ.get("GROQ_API_KEYS", ""))
-_legacy_groq_key = os.environ.get("GROQ_API_KEY", "").strip()
-if _legacy_groq_key and _legacy_groq_key not in GROQ_API_KEYS:
-    GROQ_API_KEYS.append(_legacy_groq_key)
+# Both GROQ_API_KEYS and the older GROQ_API_KEY accept one key or a
+# comma-separated list; keys from GROQ_API_KEYS come first.
+GROQ_API_KEYS: list[str] = list(
+    dict.fromkeys(
+        _split_list(os.environ.get("GROQ_API_KEYS", "")) + _split_list(os.environ.get("GROQ_API_KEY", ""))
+    )
+)
 
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
 
