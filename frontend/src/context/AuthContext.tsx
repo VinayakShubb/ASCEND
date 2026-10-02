@@ -9,6 +9,8 @@ import {
   isSessionExpired,
   publicFetch,
   fetchCurrentUser,
+  refreshSession,
+  SESSION_EXPIRED_EVENT,
 } from '../lib/api';
 
 interface AuthContextType {
@@ -23,10 +25,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Shape returned by /auth/login, /auth/register, /auth/refresh. These
-// endpoints always answer with HTTP 200 and an `error` field on failure
-// (e.g. wrong password) rather than an HTTP error status, so the UI can show
-// a friendly message instead of a generic "request failed".
+// Shape returned by /auth/login, /auth/register, /auth/refresh. On failure
+// (wrong password, validation, rate limit) the body always carries a
+// readable `error` field, whatever the HTTP status, so the UI can show it.
 interface AuthResponse {
   error: string | null;
   access_token?: string;
@@ -92,20 +93,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Saved session expired -- try to refresh once. The original Supabase
-        // client refreshed proactively in the background on a timer; this
-        // simpler version just refreshes on load, which is enough for how the
-        // app is actually used (opened, used for a while, closed).
-        const result = await publicFetch<AuthResponse>('/auth/refresh', {
-          method: 'POST',
-          body: JSON.stringify({ refresh_token: saved.refresh_token }),
-        });
-        const refreshed = toSession(result);
+        // Saved session expired -- refresh it. While the app is open, apiFetch
+        // keeps the session fresh on its own (see refreshSession in api.ts).
+        const refreshed = await refreshSession();
         if (refreshed) {
-          setSession(refreshed);
           setSessionState(refreshed);
-        } else {
-          clearSession();
+        } else if (getSession()) {
+          // Refresh failed for a temporary reason (network, rate limit): keep
+          // the user signed in; the next API call retries the refresh.
+          setSessionState(getSession());
         }
       } catch {
         // Network failure on startup (backend unreachable, etc) -- fall
@@ -118,6 +114,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     init();
+  }, []);
+
+  // apiFetch fires this when the session can no longer be refreshed (e.g.
+  // the user signed out on another device): drop back to the login screen.
+  useEffect(() => {
+    const onExpired = () => setSessionState(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
 
   const login = async (identifier: string, password: string) => {

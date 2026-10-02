@@ -43,15 +43,85 @@ export async function fetchCurrentUser(accessToken: string): Promise<SessionUser
   return response.json();
 }
 
+// The backend works out "today" in the user's own timezone from this header.
+// Without it, everything between midnight and 05:30 IST would count as
+// yesterday (the server runs on UTC).
+function timezoneHeader(): Record<string, string> {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz ? { 'X-Timezone': tz } : {};
+  } catch {
+    return {};
+  }
+}
+
+// Fired when the session can't be refreshed any more, so AuthContext can
+// send the user back to the login screen.
+export const SESSION_EXPIRED_EVENT = 'ascend:session-expired';
+
+// Refresh this long before the access token actually expires, so a request
+// never goes out with a token that dies in flight.
+const REFRESH_MARGIN_SECONDS = 60;
+
+let refreshInFlight: Promise<Session | null> | null = null;
+
+// Swaps the refresh token for a new session. Concurrent callers share one
+// request: Supabase refresh tokens are single-use, so two parallel refreshes
+// would log the user out.
+export function refreshSession(): Promise<Session | null> {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const saved = getSession();
+    if (!saved) return null;
+    try {
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...timezoneHeader() },
+        body: JSON.stringify({ refresh_token: saved.refresh_token }),
+      });
+      // Rate limited or server trouble: the refresh token may still be fine,
+      // so don't log the user out; a later request will try again.
+      if (response.status === 429 || response.status >= 500) return null;
+      const result = await response.json();
+      if (result?.access_token && result?.refresh_token && result?.expires_at && result?.user) {
+        const refreshed: Session = {
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
+          expires_at: result.expires_at,
+          user: result.user,
+        };
+        setSession(refreshed);
+        return refreshed;
+      }
+    } catch {
+      // Network failure: keep the saved session so the next request can try
+      // again, rather than logging the user out over a blip.
+      return null;
+    }
+    clearSession();
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    return null;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
 // Plain fetch with no auth header attached and no throw-on-error -- used for
-// the auth endpoints, which return { error: "..." } with a 200 status
-// instead of an HTTP error status for expected failures like bad passwords.
+// the auth endpoints, which return { error: "..." } in the body for expected
+// failures like bad passwords, so the UI can always show `result.error`.
 export async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers as Record<string, string> | undefined) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...timezoneHeader(),
+        ...(options.headers as Record<string, string> | undefined),
+      },
     });
   } catch {
     // fetch() itself throws on network failure (backend down, CORS blocked,
@@ -63,18 +133,32 @@ export async function publicFetch<T>(path: string, options: RequestInit = {}): P
 }
 
 // Authenticated fetch for everything else. Throws on non-2xx so callers can
-// catch/handle it.
+// catch/handle it. Refreshes the session when the access token is about to
+// expire, and retries once if the server still says 401.
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const session = getSession();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> | undefined),
-  };
-  if (session) {
-    headers.Authorization = `Bearer ${session.access_token}`;
+  let session = getSession();
+  if (session && session.expires_at - REFRESH_MARGIN_SECONDS <= Math.floor(Date.now() / 1000)) {
+    session = (await refreshSession()) ?? getSession();
   }
 
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const send = (current: Session | null) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...timezoneHeader(),
+      ...(options.headers as Record<string, string> | undefined),
+    };
+    if (current) {
+      headers.Authorization = `Bearer ${current.access_token}`;
+    }
+    return fetch(`${API_BASE}${path}`, { ...options, headers });
+  };
+
+  let response = await send(session);
+
+  if (response.status === 401 && session) {
+    const refreshed = await refreshSession();
+    if (refreshed) response = await send(refreshed);
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);

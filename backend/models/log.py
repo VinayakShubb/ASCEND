@@ -1,6 +1,7 @@
+from datetime import date
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class HabitLog(BaseModel):
@@ -13,6 +14,14 @@ class HabitLog(BaseModel):
 
 class ToggleRequest(BaseModel):
     date: str
+
+    @field_validator("date")
+    @classmethod
+    def must_be_iso_date(cls, value: str) -> str:
+        try:
+            return date.fromisoformat(value).isoformat()
+        except ValueError:
+            raise ValueError("date must be YYYY-MM-DD")
 
 
 class ToggleResponse(BaseModel):

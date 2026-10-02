@@ -1,9 +1,12 @@
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Difficulty = Literal["easy", "medium", "hard", "extreme"]
 Frequency = Literal["daily", "weekly", "custom"]
+
+HABIT_NAME_MAX_LENGTH = 60
+CATEGORY_MAX_LENGTH = 40
 
 
 class Habit(BaseModel):
@@ -17,15 +20,15 @@ class Habit(BaseModel):
 
 
 class HabitCreate(BaseModel):
-    name: str
-    category: str
+    name: str = Field(max_length=HABIT_NAME_MAX_LENGTH)
+    category: str = Field(max_length=CATEGORY_MAX_LENGTH)
     difficulty: Difficulty
     frequency: Frequency
 
 
 class HabitUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=HABIT_NAME_MAX_LENGTH)
+    category: Optional[str] = Field(default=None, max_length=CATEGORY_MAX_LENGTH)
     difficulty: Optional[Difficulty] = None
     frequency: Optional[Frequency] = None
     archived: Optional[bool] = None

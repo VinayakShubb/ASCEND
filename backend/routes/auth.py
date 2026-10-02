@@ -1,11 +1,60 @@
-from fastapi import APIRouter, Depends
+import logging
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from postgrest.exceptions import APIError
 
 import config
 import database
-from deps import derive_username, get_current_user
+from deps import derive_username, get_client_ip, get_current_user
 from models.auth import AuthResponse, AuthUser, GoogleAuthUrl, LoginRequest, RefreshRequest, RegisterRequest
+from services.rate_limit import (
+    login_identifier_limiter,
+    login_ip_limiter,
+    refresh_ip_limiter,
+    register_ip_limiter,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# One message for every login failure (unknown user ID, unknown email, wrong
+# password) so the login form can't be used to discover which accounts exist.
+INVALID_CREDENTIALS = "Incorrect email / user ID or password."
+GENERIC_AUTH_ERROR = "Something went wrong. Please try again."
+TOO_MANY_ATTEMPTS = "Too many attempts. Please wait a few minutes and try again."
+USERNAME_TAKEN = "This User ID is already taken. Choose another."
+
+# Supabase auth error texts that are safe and useful to show, mapped to our
+# own wording. Anything not listed becomes GENERIC_AUTH_ERROR, so internal
+# error details never reach the browser.
+_KNOWN_AUTH_ERRORS = {
+    "invalid login credentials": INVALID_CREDENTIALS,
+    "email not confirmed": "Please confirm your email address first. Check your inbox.",
+    "user already registered": "An account with this email already exists. Try logging in.",
+    "password should be at least": "Password is too short.",
+    "invalid refresh token": "Your session has expired. Please log in again.",
+    "refresh token not found": "Your session has expired. Please log in again.",
+    "refresh token is not valid": "Your session has expired. Please log in again.",
+    "email rate limit exceeded": TOO_MANY_ATTEMPTS,
+    "rate limit": TOO_MANY_ATTEMPTS,
+}
+
+
+def _friendly_auth_error(e: Exception) -> str:
+    text = str(e).lower()
+    for needle, message in _KNOWN_AUTH_ERRORS.items():
+        if needle in text:
+            return message
+    logger.warning("Unmapped Supabase auth error: %s", e)
+    return GENERIC_AUTH_ERROR
+
+
+def _error_response(message: str, status_code: int) -> JSONResponse:
+    # Same body shape as a normal AuthResponse, so the frontend's existing
+    # `result.error` handling shows the message whatever the status code.
+    return JSONResponse(status_code=status_code, content=AuthResponse(error=message).model_dump())
 
 
 def _session_to_response(session, user_metadata: dict, email: str | None, created_at) -> AuthResponse:
@@ -24,9 +73,12 @@ def _session_to_response(session, user_metadata: dict, email: str | None, create
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(body: LoginRequest):
-    email = body.identifier
+def login(body: LoginRequest, request: Request):
+    ip = get_client_ip(request)
+    if not login_ip_limiter.allow(ip) or not login_identifier_limiter.allow(body.identifier.lower()):
+        return _error_response(TOO_MANY_ATTEMPTS, 429)
 
+    email = body.identifier
     # If there's no '@', treat it as a username and look up the real email first.
     if "@" not in body.identifier:
         result = (
@@ -37,20 +89,23 @@ def login(body: LoginRequest):
             .execute()
         )
         if not result.data:
-            return AuthResponse(error="User ID not found. Try your email instead.")
+            return AuthResponse(error=INVALID_CREDENTIALS)
         email = result.data[0]["email"]
 
     try:
         auth_result = database.auth_client.auth.sign_in_with_password({"email": email, "password": body.password})
     except Exception as e:
-        return AuthResponse(error=str(e))
+        return AuthResponse(error=_friendly_auth_error(e))
 
     user = auth_result.user
     return _session_to_response(auth_result.session, user.user_metadata or {}, user.email, user.created_at)
 
 
 @router.post("/register", response_model=AuthResponse)
-def register(body: RegisterRequest):
+def register(body: RegisterRequest, request: Request):
+    if not register_ip_limiter.allow(get_client_ip(request)):
+        return _error_response(TOO_MANY_ATTEMPTS, 429)
+
     # Check if the username is already taken.
     existing = (
         database.db_client.table("profiles")
@@ -60,7 +115,7 @@ def register(body: RegisterRequest):
         .execute()
     )
     if existing.data:
-        return AuthResponse(error="This User ID is already taken. Choose another.")
+        return AuthResponse(error=USERNAME_TAKEN)
 
     try:
         signup_result = database.auth_client.auth.sign_up(
@@ -71,19 +126,29 @@ def register(body: RegisterRequest):
             }
         )
     except Exception as e:
-        return AuthResponse(error=str(e))
+        return AuthResponse(error=_friendly_auth_error(e))
 
     if signup_result.user:
-        # Mirrors the original TS behavior exactly, including storing the
-        # plaintext password alongside Supabase's own hashed auth record.
-        database.db_client.table("profiles").insert(
-            {
-                "id": signup_result.user.id,
-                "username": body.username,
-                "email": body.email,
-                "password_plain": body.password,
-            }
-        ).execute()
+        try:
+            database.db_client.table("profiles").insert(
+                {
+                    "id": signup_result.user.id,
+                    "username": body.username,
+                    "email": body.email,
+                }
+            ).execute()
+        except APIError as e:
+            # Most likely someone registered the same username between the
+            # check above and now (profiles.username is UNIQUE). Remove the
+            # auth account just created so it isn't left without a profile.
+            logger.warning("Profile insert failed for new user: %s", e)
+            try:
+                database.db_client.auth.admin.delete_user(signup_result.user.id)
+            except Exception:
+                logger.exception("Could not roll back auth user %s", signup_result.user.id)
+            if getattr(e, "code", None) == "23505":
+                return AuthResponse(error=USERNAME_TAKEN)
+            return AuthResponse(error=GENERIC_AUTH_ERROR)
 
     if not signup_result.session:
         # Email confirmation required -- no session yet, but not an error.
@@ -105,12 +170,14 @@ def google_login_url():
 
 
 @router.post("/refresh", response_model=AuthResponse)
-def refresh(body: RefreshRequest):
+def refresh(body: RefreshRequest, request: Request):
+    if not refresh_ip_limiter.allow(get_client_ip(request)):
+        return _error_response(TOO_MANY_ATTEMPTS, 429)
+
     try:
         result = database.auth_client.auth.refresh_session(body.refresh_token)
     except Exception as e:
-        return AuthResponse(error=str(e))
-
+        return AuthResponse(error=_friendly_auth_error(e))
     user = result.user
     return _session_to_response(result.session, user.user_metadata or {}, user.email, user.created_at)
 
