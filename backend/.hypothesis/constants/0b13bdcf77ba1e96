@@ -1,0 +1,4 @@
+# file: C:\Vinayak\Coding\ASCEND\ascend\backend\routes\auth.py
+# hypothesis_version: 6.140.2
+
+[429, '/auth', '/google', '/login', '/me', '/refresh', '/register', '23505', '@', 'auth', 'code', 'created_at', 'data', 'email', 'email not confirmed', 'google', 'id', 'isoformat', 'obsidian', 'options', 'password', 'profiles', 'provider', 'rate limit', 'redirect_to', 'user_metadata', 'username']

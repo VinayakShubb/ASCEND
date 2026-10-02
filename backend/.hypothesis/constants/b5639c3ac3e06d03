@@ -1,0 +1,4 @@
+# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\habit_intent.py
+# hypothesis_version: 6.140.2
+
+['[^\\w\\s]', '[_-]+', '\\s+', 'career', 'creative', 'fitness', 'health', 'learning', 'mindful']

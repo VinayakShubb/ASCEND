@@ -255,8 +255,9 @@ def test_weekly_focus_targets_the_biggest_di_gain_and_projects_it():
     assert focus["name"] == "Deep work"
     assert focus["current"] == 1
     assert focus["target"] == 4
-    x = next(h for h in m["habits"] if h["name"] == "Deep work")
-    assert focus["projectedDi"] == min(100, round(m["score"]["value"] + x["pointValue"] * 3))
+    # Verified by simulation: do Deep work on 3 more of this week's days.
+    simulated = logs + logs_for("x", [0, 2, 3])
+    assert focus["projectedDi"] == calculations.calculate_discipline_index(habits, simulated, TODAY.isoformat())
 
 
 def test_daily7_is_seven_days_ending_today():

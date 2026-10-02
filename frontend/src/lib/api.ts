@@ -231,6 +231,7 @@ export interface CipherMetric {
   caption: string;
   baseline: string;
   trend: Trend;
+  explain: string;
 }
 
 export interface CipherHabit {
@@ -242,17 +243,25 @@ export interface CipherHabit {
   trend: Trend;
   streak: number;
   pointsLost7: number;
+  lossExplain: string;
   note: string;
 }
 
 export interface CipherAnalysis {
-  version: 3;
+  version: 4;
   analyzedAt: string;
   narrative: boolean;
   status: CipherStatus;
   isNewUser: boolean;
   daysTracked: number;
-  score: { value: number; baseline: number; weekAgo: number; momentum: number; maxToday: number };
+  score: {
+    value: number;
+    baseline: number;
+    weekAgo: number;
+    momentum: number;
+    maxToday: number;
+    explain: { value: string; baseline: string; weekAgo: string; maxToday: string };
+  };
   metrics: CipherMetric[];
   daily7: Array<{ date: string; day: string; score: number; isToday: boolean }>;
   headline: string;
@@ -260,7 +269,7 @@ export interface CipherAnalysis {
   strengths: string;
   risks: string;
   weeklyFocus: string;
-  focus: { name: string; current: number; target: number; projectedDi: number } | null;
+  focus: { name: string; current: number; target: number; projectedDi: number; explain: string } | null;
   atRisk: Array<{ name: string; streak: number }>;
   habits: CipherHabit[];
   personality: { type: string; tagline: string; evidence: string; insight: string };
@@ -270,7 +279,8 @@ export interface CipherAnalysis {
   bestWeekday: string | null;
   worstWeekday: string | null;
   patternNote: string;
-  plan: Array<{ habitId: string; name: string; impact: number; action: string }>;
+  rhythmExplain: string;
+  plan: Array<{ habitId: string; name: string; impact: number; explain: string; action: string }>;
   changes: Array<{ label: string; delta: string; direction: 'up' | 'down' }>;
 }
 

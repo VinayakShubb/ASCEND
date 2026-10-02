@@ -23,12 +23,14 @@ def calculate_daily_completion(habits: list[dict], logs: list[dict], date_str: s
         return 0
 
     active_habit_ids = {h["id"] for h in active_habits}
-    completed_count = sum(
-        1
+    # A set, so a habit logged twice for the same day still counts once
+    # (duplicates could exist before UNIQUE(habit_id, date) was added).
+    completed_ids = {
+        l["habit_id"]
         for l in logs
         if l["date"] == date_str and l["status"] == "completed" and l["habit_id"] in active_habit_ids
-    )
-    return (completed_count / len(active_habits)) * 100
+    }
+    return (len(completed_ids) / len(active_habits)) * 100
 
 
 def calculate_weighted_score(habits: list[dict], logs: list[dict], date_str: str) -> float:

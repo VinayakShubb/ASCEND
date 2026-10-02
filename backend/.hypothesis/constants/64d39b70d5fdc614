@@ -1,0 +1,4 @@
+# file: C:\Vinayak\Coding\ASCEND\ascend\backend\models\habit.py
+# hypothesis_version: 6.140.2
+
+['custom', 'daily', 'easy', 'extreme', 'hard', 'medium', 'weekly']

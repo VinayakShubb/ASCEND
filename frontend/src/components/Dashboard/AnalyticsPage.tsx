@@ -7,6 +7,7 @@ import { format, subDays, addDays } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus, BarChart2, Target, Flame, Activity } from 'lucide-react';
 import { PerformanceChart } from '../UI/PerformanceChart';
 import { AppFooter } from '../UI/AppFooter';
+import { useTrackingStart } from '../../hooks/useTrackingStart';
 
 type TrendWindow =
   | { mode: 'journey'; start: Date; end: Date; registrationDate: Date; todayDate: Date }
@@ -23,12 +24,14 @@ export const AnalyticsPage = () => {
   const [todayCompletion, setTodayCompletion] = useState(0);
   const [lastWeekAvg, setLastWeekAvg] = useState(0);
 
-  // MODE 1: Journey Mode (first 30 days from registration).
-  // MODE 2: Rolling Window (last 30 days) once the user is older than that.
+  // MODE 1: Journey Mode (first 30 days of history).
+  // MODE 2: Rolling Window (last 30 days) once the history is longer than that.
+  // History starts at signup or the first log, whichever is earlier.
+  const trackingStart = useTrackingStart();
   const trendWindow: TrendWindow | null = useMemo(() => {
-    if (!user?.created_at) return null;
+    if (!user) return null;
 
-    const registrationDate = new Date(user.created_at);
+    const registrationDate = new Date(trackingStart);
     registrationDate.setHours(0, 0, 0, 0);
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
@@ -40,7 +43,7 @@ export const AnalyticsPage = () => {
       return { mode: 'journey', start: registrationDate, end: addDays(registrationDate, 29), registrationDate, todayDate };
     }
     return { mode: 'rolling', start: subDays(new Date(), 29), end: new Date(), registrationDate, todayDate };
-  }, [user]);
+  }, [user, trackingStart]);
 
   // Fetch the day-by-day series once per trend window (clamped to today --
   // there's nothing to fetch for future days, they render as a gap instead).
@@ -50,10 +53,12 @@ export const AnalyticsPage = () => {
     // Only unreachable in practice (registration date is never after today),
     // but guarded rather than assumed.
     if (clampedEnd < trendWindow.start) return;
+    let stale = false;
     statsApi
       .range(format(trendWindow.start, 'yyyy-MM-dd'), format(clampedEnd, 'yyyy-MM-dd'))
-      .then(setRangeStats)
-      .catch(() => setRangeStats([]));
+      .then(data => { if (!stale) setRangeStats(data); })
+      .catch(() => { if (!stale) setRangeStats([]); });
+    return () => { stale = true; };
   }, [trendWindow]);
 
   // Discipline Index (= this week's 7-day average) and last week's 7-day

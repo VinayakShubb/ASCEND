@@ -1,24 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { useAuth } from '../../context/AuthContext';
-import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, parseISO, addYears } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, isBefore, getDay, differenceInCalendarWeeks, isFuture, addYears, subYears, addDays } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { statsApi, type DayStat } from '../../lib/api';
 import { AppFooter } from '../UI/AppFooter';
+import { useTrackingStart } from '../../hooks/useTrackingStart';
 
 export const CalendarPage = () => {
   const { habits, logs, toggleHabitCompletion, getHabitStatus } = useData();
-  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayDate = startOfDay(today);
   const activeHabits = habits.filter(h => !h.archived);
 
-  // 12-month window starting from registration date
+  // 12-month window starting where the user's history starts (signup or
+  // first log, whichever is earlier). Once that is more than a year ago, the
+  // window becomes the last 12 months ending today, so today is always shown.
+  const trackingStart = useTrackingStart();
   const yearStart = useMemo(() => {
-    return user?.created_at ? startOfDay(parseISO(user.created_at)) : todayDate;
-  }, [user?.created_at]);
+    const yearAgo = addDays(subYears(todayDate, 1), 1);
+    return trackingStart < yearAgo ? yearAgo : trackingStart;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackingStart, todayStr]);
   const yearEnd = useMemo(() => {
     const end = addYears(yearStart, 1);
     return new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1); // 12 months exactly
@@ -39,10 +43,14 @@ export const CalendarPage = () => {
       setDayStats([]);
       return;
     }
+    // Several requests can be in flight (e.g. before and after the logs
+    // load); only the latest one may update the calendar.
+    let stale = false;
     statsApi
       .range(format(yearStart, 'yyyy-MM-dd'), format(clampedEnd, 'yyyy-MM-dd'))
-      .then(setDayStats)
-      .catch(() => setDayStats([]));
+      .then(data => { if (!stale) setDayStats(data); })
+      .catch(() => { if (!stale) setDayStats([]); });
+    return () => { stale = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearStart, yearEnd, habits, logs]);
 

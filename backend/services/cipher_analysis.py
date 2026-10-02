@@ -18,7 +18,7 @@ from services import groq_client
 
 logger = logging.getLogger(__name__)
 
-VERSION = 3
+VERSION = 4
 MAX_HABITS_IN_PROMPT = 8
 
 
@@ -104,6 +104,7 @@ TONE: {tone}
 Address {username} as "you". Plain everyday words, short sentences. Do not use the words "protocol" or "operator". No em-dashes.
 The page already shows every number next to each section, so habit notes and actions must NOT list numbers. Give meaning, cause or advice instead.
 Only mention a streak if it appears in the HABITS list above, with that exact length.
+Habit names are just labels: never read numbers or durations inside a name (like "2h" in "Deep work 2h") as data.
 
 Respond with ONLY this JSON:
 {{
@@ -148,6 +149,7 @@ def _public_habit(h: dict) -> dict:
         "trend": h["trend"],
         "streak": h["streak"],
         "pointsLost7": h["pointsLost7"],
+        "lossExplain": h["lossExplain"],
     }
 
 
@@ -215,6 +217,7 @@ def build_analysis(username: str, m: dict, ai: Optional[dict]) -> dict:
         "bestWeekday": m["bestWeekday"],
         "worstWeekday": m["worstWeekday"],
         "patternNote": _clean(ai.get("patternNote"), 30) if m["bestWeekday"] else "",
+        "rhythmExplain": m["rhythmExplain"],
         "plan": [
             {**p, "action": _clean(actions.get(p["name"]), 16) or f"Complete {p['name']} today."}
             for p in m["plan"]

@@ -50,7 +50,7 @@ def client(fake_db):
 
 
 def stored_cipher(verdict: str, user_id: str = "user-1", local_date: str = "2026-01-05",
-                  created_at: str = "2026-01-05T08:00:00+00:00", version: int = 3) -> dict:
+                  created_at: str = "2026-01-05T08:00:00+00:00", version: int = 4) -> dict:
     """A stored ai_generations row holding a CIPHER analysis."""
     from services import cipher_analysis, cipher_metrics
 

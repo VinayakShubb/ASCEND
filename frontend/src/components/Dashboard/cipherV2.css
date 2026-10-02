@@ -384,3 +384,18 @@
 @media (prefers-reduced-motion: reduce) {
   .cx-week-bar div { animation: none !important; }
 }
+
+/* ---------- Number explanations ---------- */
+.cx-explain { margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+.cx-explain strong { color: var(--text-secondary); font-weight: 600; }
+.cx-baselines .cx-explain { margin-top: 4px; }
+.cx-explain-score { margin-top: 14px; }
+.cx-metric .cx-explain { margin-top: 8px; }
+.cx-plan-body .cx-explain { display: block; margin-top: 4px; }
+.cx-projection .cx-explain { max-width: 26ch; text-align: center; }
+.cx-habit .cx-explain + p { margin-top: 6px; }
+.cx-explain-rhythm { margin-top: 12px; }
+@media (max-width: 720px) {
+  .cx-projection .cx-explain { max-width: none; text-align: left; }
+  .cx-projection { flex-wrap: wrap; }
+}

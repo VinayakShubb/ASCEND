@@ -243,7 +243,7 @@ export const CipherPage = () => {
               <h2 className="cx-headline">{analysis.headline}</h2>
               <p className="cx-verdict">{analysis.verdict}</p>
               <dl className="cx-baselines">
-                <div><dt>30-day average</dt><dd>{analysis.score.baseline}</dd></div>
+                <div><dt>30-day average</dt><dd>{analysis.score.baseline}</dd><p className="cx-explain">{analysis.score.explain.baseline}</p></div>
                 <div>
                   <dt>7 days ago</dt>
                   <dd>
@@ -252,8 +252,9 @@ export const CipherPage = () => {
                       {' '}({analysis.score.momentum >= 0 ? '+' : ''}{analysis.score.momentum})
                     </span>
                   </dd>
+                  <p className="cx-explain">{analysis.score.explain.weekAgo}</p>
                 </div>
-                <div><dt>Max possible today</dt><dd>{analysis.score.maxToday}</dd></div>
+                <div><dt>Max possible today</dt><dd>{analysis.score.maxToday}</dd><p className="cx-explain">{analysis.score.explain.maxToday}</p></div>
               </dl>
               <div className="cx-week" aria-label="Daily score, last 7 days">
                 {analysis.daily7.map(d => (
@@ -265,6 +266,9 @@ export const CipherPage = () => {
                   </div>
                 ))}
               </div>
+              <p className="cx-explain cx-explain-score">
+                <strong>Discipline Index {analysis.score.value}:</strong> {analysis.score.explain.value}
+              </p>
             </div>
           </section>
 
@@ -291,6 +295,7 @@ export const CipherPage = () => {
                 <span className="cx-metric-baseline">
                   <TrendIcon trend={metric.trend} /> {metric.baseline}
                 </span>
+                <p className="cx-explain">{metric.explain}</p>
               </article>
             ))}
           </section>
@@ -331,6 +336,7 @@ export const CipherPage = () => {
                     <div className="cx-plan-body">
                       <strong>{item.name}</strong>
                       <span>{item.action}</span>
+                      <small className="cx-explain">{item.explain}</small>
                     </div>
                     <span className="cx-impact">{formatImpact(item.impact)}</span>
                   </li>
@@ -366,6 +372,7 @@ export const CipherPage = () => {
                   <strong style={{ color: TREND_COLOR.up }}>{analysis.focus.projectedDi}</strong>
                 </div>
                 <small>if you hit the target</small>
+                <p className="cx-explain">{analysis.focus.explain}</p>
               </div>
             </section>
           )}
@@ -401,6 +408,7 @@ export const CipherPage = () => {
                         <span className="cx-cost">{h.pointsLost7} DI lost this week</span>
                       </div>
                       <RateBars habit={h} />
+                      <p className="cx-explain">{h.lossExplain}</p>
                       <p>{h.note}</p>
                     </article>
                   ))}
@@ -464,6 +472,7 @@ export const CipherPage = () => {
             ) : (
               <p className="cx-muted">Your weekly rhythm appears after a week of tracking.</p>
             )}
+            {analysis.rhythmExplain && <p className="cx-explain cx-explain-rhythm">{analysis.rhythmExplain}</p>}
             {analysis.bestWeekday && (
               <p className="cx-pattern">
                 <span className="cx-tag is-good">Best: {analysis.bestWeekday}</span>

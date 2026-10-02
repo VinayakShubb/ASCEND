@@ -1,0 +1,4 @@
+# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\rate_limit.py
+# hypothesis_version: 6.140.2
+
+[300, 900, 3600, 10000]

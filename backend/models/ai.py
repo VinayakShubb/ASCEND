@@ -30,12 +30,20 @@ class CoachOutput(BaseModel):
 Trend = Literal["up", "down", "flat"]
 
 
+class CipherScoreExplain(BaseModel):
+    value: str
+    baseline: str
+    weekAgo: str
+    maxToday: str
+
+
 class CipherScore(BaseModel):
     value: int
     baseline: int
     weekAgo: int
     momentum: int
     maxToday: int
+    explain: CipherScoreExplain
 
 
 class CipherMetric(BaseModel):
@@ -45,6 +53,7 @@ class CipherMetric(BaseModel):
     caption: str
     baseline: str
     trend: Trend
+    explain: str
 
 
 class CipherHabit(BaseModel):
@@ -56,6 +65,7 @@ class CipherHabit(BaseModel):
     trend: Trend
     streak: int
     pointsLost7: float
+    lossExplain: str
     note: str
 
 
@@ -76,6 +86,7 @@ class CipherPlanItem(BaseModel):
     habitId: str
     name: str
     impact: float
+    explain: str
     action: str
 
 
@@ -96,6 +107,7 @@ class CipherFocus(BaseModel):
     current: int
     target: int
     projectedDi: int
+    explain: str
 
 
 class CipherChange(BaseModel):
@@ -105,7 +117,7 @@ class CipherChange(BaseModel):
 
 
 class CipherAnalysisV2(BaseModel):
-    version: Literal[3]
+    version: Literal[4]
     analyzedAt: str
     narrative: bool
     status: Status
@@ -129,6 +141,7 @@ class CipherAnalysisV2(BaseModel):
     bestWeekday: Optional[str] = None
     worstWeekday: Optional[str] = None
     patternNote: str
+    rhythmExplain: str
     plan: List[CipherPlanItem]
     changes: List[CipherChange]
     snapshot: Dict[str, float]
