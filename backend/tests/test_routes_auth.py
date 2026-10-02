@@ -195,3 +195,17 @@ def test_login_still_accepts_short_legacy_passwords(client):
 
     assert response.status_code == 200
     assert response.json()["access_token"] == "access"
+
+
+def test_refresh_during_a_network_blip_is_503_so_the_session_survives(client, fake_auth, monkeypatch):
+    import httpx
+
+    def refresh_session(token):
+        raise httpx.RemoteProtocolError("Server disconnected")
+
+    fake_auth.refresh_session = refresh_session
+
+    response = client.post("/auth/refresh", json={"refresh_token": "r"})
+
+    assert response.status_code == 503
+    assert "try again" in response.json()["error"]

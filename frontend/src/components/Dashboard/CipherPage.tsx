@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, Check, Flame, Minus, Play, RefreshCw, Sparkles } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Check, Flame, Play, RefreshCw, Sparkles, Trophy } from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -80,10 +80,20 @@ function ScoreRing({ value, color }: { value: number; color: string }) {
   );
 }
 
+/* Up/down arrows; "no real change" is spelled out, since a bare dash reads
+   like a rendering glitch. */
 function TrendIcon({ trend, size = 14 }: { trend: Trend; size?: number }) {
   if (trend === 'up') return <ArrowUpRight size={size} color={TREND_COLOR.up} aria-label="up" />;
   if (trend === 'down') return <ArrowDownRight size={size} color={TREND_COLOR.down} aria-label="down" />;
-  return <Minus size={size} color={TREND_COLOR.flat} aria-label="steady" />;
+  return <span className="cx-steady">steady</span>;
+}
+
+function MetricTrend({ metricKey, trend }: { metricKey: string; trend: Trend }) {
+  // A streak has no "usual" to compare with: only celebrate a record.
+  if (metricKey === 'streak') {
+    return trend === 'up' ? <span className="cx-record"><Trophy size={13} /> Personal best</span> : null;
+  }
+  return <TrendIcon trend={trend} />;
 }
 
 function RateBars({ habit }: { habit: CipherHabit }) {
@@ -293,7 +303,7 @@ export const CipherPage = () => {
                 <span className="cx-metric-value">{metric.value}</span>
                 <span className="cx-metric-caption">{metric.caption}</span>
                 <span className="cx-metric-baseline">
-                  <TrendIcon trend={metric.trend} /> {metric.baseline}
+                  <MetricTrend metricKey={metric.key} trend={metric.trend} /> {metric.baseline}
                 </span>
                 <p className="cx-explain">{metric.explain}</p>
               </article>
@@ -433,7 +443,7 @@ export const CipherPage = () => {
                     <span><b>{h.done7}/7</b> this week</span>
                     <span><b>{h.rate30}%</b> 30-day</span>
                     <span><b>{h.streak}d</b> streak</span>
-                    <span className="cx-breakdown-trend"><TrendIcon trend={h.trend} /> {h.trend === 'up' ? 'improving' : h.trend === 'down' ? 'dropping' : 'steady'}</span>
+                    <span className="cx-breakdown-trend">{h.trend === 'flat' ? <span className="cx-steady">steady</span> : <><TrendIcon trend={h.trend} /> {h.trend === 'up' ? 'improving' : 'dropping'}</>}</span>
                   </div>
                   <p>{h.note}</p>
                 </li>

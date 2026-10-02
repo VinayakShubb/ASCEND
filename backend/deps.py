@@ -4,7 +4,9 @@ import time
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import httpx
 from fastapi import Header, HTTPException, Request
+from gotrue.errors import AuthRetryableError
 
 import database
 
@@ -57,6 +59,10 @@ def get_current_user(authorization: str | None = Header(default=None)) -> dict:
 
     try:
         result = database.auth_client.auth.get_user(token)
+    except (httpx.TransportError, AuthRetryableError):
+        # Supabase unreachable: that says nothing about the token. A 401 here
+        # would make the frontend drop a perfectly valid session.
+        raise HTTPException(status_code=503, detail="Auth service temporarily unavailable")
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 

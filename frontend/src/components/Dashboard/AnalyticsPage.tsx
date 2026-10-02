@@ -171,9 +171,10 @@ export const AnalyticsPage = () => {
              <Minus size={18} />}
           </div>
           <div className="stat-value" style={{ color: weekDelta > 0 ? '#00FF66' : weekDelta < 0 ? '#FF4444' : undefined }}>
-            {weekDelta > 0 ? '+' : ''}{weekDelta}%
+            {weekDelta > 0 ? '+' : ''}{weekDelta}
           </div>
-          <div className="stat-label">Week Change</div>
+          {/* Discipline Index points vs 7 days ago, not a percentage. */}
+          <div className="stat-label">DI Week Change</div>
         </div>
         <div className="stat-card">
           <BarChart2 size={18} className="stat-icon" />

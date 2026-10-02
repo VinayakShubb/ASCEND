@@ -399,3 +399,9 @@
   .cx-projection .cx-explain { max-width: none; text-align: left; }
   .cx-projection { flex-wrap: wrap; }
 }
+
+.cx-steady {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary); background: var(--bg-tertiary);
+}
+.cx-record { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #ffb020; }

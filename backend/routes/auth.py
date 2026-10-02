@@ -1,6 +1,8 @@
 import logging
 
+import httpx
 from fastapi import APIRouter, Depends, Request
+from gotrue.errors import AuthRetryableError
 from fastapi.responses import JSONResponse
 from postgrest.exceptions import APIError
 
@@ -25,6 +27,7 @@ INVALID_CREDENTIALS = "Incorrect email / user ID or password."
 GENERIC_AUTH_ERROR = "Something went wrong. Please try again."
 TOO_MANY_ATTEMPTS = "Too many attempts. Please wait a few minutes and try again."
 USERNAME_TAKEN = "This User ID is already taken. Choose another."
+SERVICE_UNAVAILABLE = "Can't reach the server right now. Please try again in a moment."
 
 # Supabase auth error texts that are safe and useful to show, mapped to our
 # own wording. Anything not listed becomes GENERIC_AUTH_ERROR, so internal
@@ -94,6 +97,8 @@ def login(body: LoginRequest, request: Request):
 
     try:
         auth_result = database.auth_client.auth.sign_in_with_password({"email": email, "password": body.password})
+    except (httpx.TransportError, AuthRetryableError):
+        return _error_response(SERVICE_UNAVAILABLE, 503)
     except Exception as e:
         return AuthResponse(error=_friendly_auth_error(e))
 
@@ -176,6 +181,9 @@ def refresh(body: RefreshRequest, request: Request):
 
     try:
         result = database.auth_client.auth.refresh_session(body.refresh_token)
+    except (httpx.TransportError, AuthRetryableError):
+        # Temporary: the frontend keeps the session on 5xx and retries later.
+        return _error_response(SERVICE_UNAVAILABLE, 503)
     except Exception as e:
         return AuthResponse(error=_friendly_auth_error(e))
     user = result.user
