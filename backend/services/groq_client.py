@@ -20,7 +20,8 @@ import config
 logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-REQUEST_TIMEOUT_SECONDS = 20
+REQUEST_TIMEOUT_SECONDS = 30
+REASONING_TOKEN_HEADROOM = 1500
 
 # Failures worth retrying on the next key. 400/422 mean the request itself is
 # bad, so another key would fail the same way.
@@ -73,8 +74,15 @@ def call_groq(
         "messages": [{"role": "user", "content": prompt}],
         "temperature": temperature,
     }
+    is_reasoning_model = config.GROQ_MODEL.startswith("openai/gpt-oss")
+    if is_reasoning_model:
+        # gpt-oss "thinks" before answering, and that thinking counts toward
+        # max_tokens. Keep it short and leave room for it on top of the
+        # answer budget, or long replies (CIPHER) come back cut off or empty.
+        body["reasoning_effort"] = "low"
+        body["include_reasoning"] = False
     if max_tokens is not None:
-        body["max_tokens"] = max_tokens
+        body["max_tokens"] = max_tokens + (REASONING_TOKEN_HEADROOM if is_reasoning_model else 0)
     if json_mode:
         body["response_format"] = {"type": "json_object"}
 
@@ -92,10 +100,14 @@ def call_groq(
 
         if response.status_code == 200:
             try:
-                return response.json()["choices"][0]["message"]["content"].strip()
+                content = response.json()["choices"][0]["message"]["content"]
             except (KeyError, IndexError, ValueError):
                 logger.warning("Unexpected Groq response shape")
                 return None
+            if not content or not content.strip():
+                logger.warning("Groq returned an empty answer")
+                return None
+            return content.strip()
 
         logger.warning("Groq returned %s with key %s", response.status_code, _key_label(key))
         if response.status_code == 429:

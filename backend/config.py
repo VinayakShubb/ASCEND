@@ -25,7 +25,9 @@ GROQ_API_KEYS: list[str] = list(
     )
 )
 
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+# llama-3.1-8b-instant was shut down for non-Enterprise accounts on
+# 2026-08-16; Groq's recommended replacement is openai/gpt-oss-20b.
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 
 # Where Google OAuth should send the browser back to after login.
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")

@@ -21,9 +21,11 @@ def keys(monkeypatch):
     monkeypatch.setattr(groq_client, "_key_cooldowns", {})
 
 
-def fake_post(responses, used_keys):
+def fake_post(responses, used_keys, bodies=None):
     def post(url, headers, json, timeout):
         used_keys.append(headers["Authorization"].removeprefix("Bearer "))
+        if bodies is not None:
+            bodies.append(json)
         result = responses.pop(0)
         if isinstance(result, Exception):
             raise result
@@ -103,3 +105,32 @@ def test_legacy_single_key_variable_is_still_read(monkeypatch):
         monkeypatch.setenv("GROQ_API_KEYS", "")
         monkeypatch.setenv("GROQ_API_KEY", "")
         importlib.reload(config)
+
+
+def test_reasoning_model_gets_low_effort_and_extra_token_room(keys, monkeypatch):
+    bodies = []
+    monkeypatch.setattr(config, "GROQ_MODEL", "openai/gpt-oss-20b")
+    monkeypatch.setattr(groq_client.httpx, "post", fake_post([ok("x")], [], bodies))
+
+    groq_client.call_groq("hi", max_tokens=300)
+
+    assert bodies[0]["model"] == "openai/gpt-oss-20b"
+    assert bodies[0]["reasoning_effort"] == "low"
+    assert bodies[0]["max_tokens"] == 300 + groq_client.REASONING_TOKEN_HEADROOM
+
+
+def test_non_reasoning_model_request_is_unchanged(keys, monkeypatch):
+    bodies = []
+    monkeypatch.setattr(config, "GROQ_MODEL", "some-other-model")
+    monkeypatch.setattr(groq_client.httpx, "post", fake_post([ok("x")], [], bodies))
+
+    groq_client.call_groq("hi", max_tokens=300)
+
+    assert "reasoning_effort" not in bodies[0]
+    assert bodies[0]["max_tokens"] == 300
+
+
+def test_empty_answer_counts_as_failure(keys, monkeypatch):
+    monkeypatch.setattr(groq_client.httpx, "post", fake_post([ok("   ")], []))
+
+    assert groq_client.call_groq("hi") is None
