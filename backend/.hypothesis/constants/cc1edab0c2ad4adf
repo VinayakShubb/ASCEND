@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\models\log.py
-# hypothesis_version: 6.140.2
-
-['completed', 'date', 'missed', 'skipped', 'uncompleted']

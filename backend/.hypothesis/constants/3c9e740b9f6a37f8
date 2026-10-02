@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\routes\ai.py
-# hypothesis_version: 6.140.2
-
-['/ai', '/brief', '/cipher', '/cipher/latest', '/coach', 'ai', 'archived', 'brief', 'category', 'changes', 'cipher', 'cipher-v2', 'coach', 'completed', 'created_at', 'date', 'difficulty', 'email', 'habit_id', 'id', 'is_fallback', 'name', 'output', 'quote', 'snapshot', 'status', 'user_metadata', 'version']

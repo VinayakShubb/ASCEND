@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\ai_brief.py
-# hypothesis_version: 6.140.2
-
-[0.9, '%A', '(?<=[.!?])\\s+', '[\\r\\n]+', '\\n+', '\\s+', '^["\\\']+|["\\\']+$', 'archived', 'completed', 'critical', 'date', 'elite', 'habit_id', 'id', 'is_fallback', 'motivation', 'quote', 'slipping', 'solid', 'status']

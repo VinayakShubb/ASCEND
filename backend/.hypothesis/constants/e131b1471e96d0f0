@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\cipher_analysis.py
-# hypothesis_version: 6.140.2
-
-[0.6, 1100, ' – ', ' — ', '"\'', ', ', ',;:', '-', '- none', '.', '.!?', 'CALIBRATING', 'Climbing this week', 'Holding steady', '\\s+', '```json|```', 'above', 'action', 'analyzedAt', 'atRisk', 'baseline', 'below', 'bestWeekday', 'changes', 'daily7', 'daysTracked', 'done7', 'focus', 'habitNotes', 'habits', 'headline', 'holdingBack', 'insight', 'isNewUser', 'level with', 'metrics', 'momentum', 'name', 'narrative', 'none', 'none yet', 'note', 'patternNote', 'personality', 'personalityInsight', 'plan', 'planActions', 'pointsLost7', 'rate30', 'rate7', 'risks', 'score', 'snapshot', 'status', 'streak', 'strengths', 'trend', 'type', 'value', 'verdict', 'version', 'weekdays', 'weeklyFocus', 'working', 'worstWeekday', '–', '—']

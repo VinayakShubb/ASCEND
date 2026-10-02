@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\groq_client.py
-# hypothesis_version: 6.140.2
-
-[0.7, 200, 401, 403, 429, 500, 502, 503, 504, 600, 1500, '...', 'All Groq keys failed', 'Authorization', 'Content-Type', 'application/json', 'choices', 'content', 'include_reasoning', 'json_object', 'low', 'max_tokens', 'message', 'messages', 'model', 'openai/gpt-oss', 'reasoning_effort', 'response_format', 'role', 'temperature', 'type', 'user']

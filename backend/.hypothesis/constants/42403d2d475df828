@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\conftest.py
-# hypothesis_version: 6.140.2
-
-['=', 'FRONTEND_URL', 'GROQ_API_KEY', 'GROQ_API_KEYS', 'HS256', 'JWT', 'SUPABASE_ANON_KEY', 'SUPABASE_URL', 'alg', 'anon', 'iss', 'role', 'service_role', 'test', 'typ']

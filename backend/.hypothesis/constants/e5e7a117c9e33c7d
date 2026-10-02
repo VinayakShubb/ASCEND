@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\services\ai_coach.py
-# hypothesis_version: 6.140.2
-
-[0.7, 300, '%d %b %Y', '+00:00', 'Friday', 'Monday', 'Saturday', 'Sunday', 'Thursday', 'Tuesday', 'Wednesday', 'Z', '[.!?]$', '[\\r\\n]+', '\\s+', '^["\\\'\\s]+|["\\\'\\s]+$', '```json|```', 'apr', 'april', 'archived', 'aug', 'august', 'completed', 'critical', 'date', 'dec', 'december', 'elite', 'feb', 'february', 'habit_id', 'id', 'jan', 'january', 'jul', 'july', 'jun', 'june', 'mar', 'march', 'may', 'name', 'nov', 'november', 'oct', 'october', 'sep', 'sept', 'september', 'slipping', 'solid', 'status']

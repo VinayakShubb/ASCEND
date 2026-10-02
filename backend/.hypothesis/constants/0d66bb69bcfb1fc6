@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\models\auth.py
-# hypothesis_version: 6.140.2
-
-[128, 254, 4096, '^[A-Za-z0-9_.-]+$', 'email', 'identifier']

@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\config.py
-# hypothesis_version: 6.140.2
-
-['1', '10', '20', 'AI_BRIEF_DAILY_LIMIT', 'AI_COACH_DAILY_LIMIT', 'ENVIRONMENT', 'FRONTEND_URL', 'FRONTEND_URLS', 'GROQ_API_KEY', 'GROQ_API_KEYS', 'GROQ_MODEL', 'SENTRY_DSN', 'SUPABASE_ANON_KEY', 'SUPABASE_URL', '[\\s,]+', 'development', 'openai/gpt-oss-20b']

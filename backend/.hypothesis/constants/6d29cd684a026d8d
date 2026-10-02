@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\routes\stats.py
-# hypothesis_version: 6.140.2
-
-[100, 366, 400, '/ceiling', '/range', '/stats', '/streaks', '/summary', 'archived', 'completed', 'completion_pct', 'current', 'date', 'discipline_index', 'habit_id', 'id', 'max_today', 'stats', 'status', 'today_completion_pct', 'today_weighted_score', 'weighted_score']

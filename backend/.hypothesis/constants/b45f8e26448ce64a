@@ -1,4 +1,0 @@
-# file: C:\Vinayak\Coding\ASCEND\ascend\backend\deps.py
-# hypothesis_version: 6.140.2
-
-[401, 2000, ',', '@', 'Bearer ', 'Missing bearer token', 'USER', 'created_at', 'email', 'full_name', 'id', 'isoformat', 'unknown', 'user_metadata', 'username', 'x-forwarded-for']
