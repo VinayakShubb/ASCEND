@@ -8,8 +8,9 @@ the same APIError code 23505 Postgres would), so race-handling code paths
 can be tested too.
 """
 
+import itertools
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from postgrest.exceptions import APIError
 
@@ -18,6 +19,16 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
     "habit_logs": [("habit_id", "date")],
     "profiles": [("username",), ("id",)],
 }
+
+
+# Strictly increasing created_at values: on Windows, datetime.now() can return
+# the same value for rows inserted back to back, which would make "newest
+# first" ordering ambiguous in tests.
+_tick = itertools.count()
+
+
+def _now_iso() -> str:
+    return (datetime.now(timezone.utc) + timedelta(microseconds=next(_tick))).isoformat()
 
 
 class FakeResult:
@@ -84,7 +95,7 @@ class FakeQuery:
         if self._mode == "insert":
             new_row = dict(self._payload)
             new_row.setdefault("id", str(uuid.uuid4()))
-            new_row.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+            new_row.setdefault("created_at", _now_iso())
             new_row.setdefault("archived", False)
             new_row.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
             for columns in self._unique_keys:

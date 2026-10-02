@@ -6,9 +6,8 @@ load_dotenv()
 
 
 def _split_list(raw: str) -> list[str]:
-    # Commas, spaces and newlines all separate items, so a value pasted as
-    # "key1,
-key2" in a dashboard still parses.
+    # Commas, spaces and newlines all separate items, so a list pasted into a
+    # dashboard across several lines still parses.
     return [item for item in re.split(r"[\s,]+", raw) if item]
 
 

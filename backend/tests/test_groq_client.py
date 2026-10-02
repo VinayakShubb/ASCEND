@@ -82,8 +82,7 @@ def test_key_lists_pasted_with_newlines_are_split(monkeypatch):
     import importlib
 
     monkeypatch.setenv("GROQ_API_KEYS", "")
-    monkeypatch.setenv("GROQ_API_KEY", "gsk_one,
-gsk_two")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_one,\ngsk_two")
     reloaded = importlib.reload(config)
     try:
         assert reloaded.GROQ_API_KEYS == ["gsk_one", "gsk_two"]
