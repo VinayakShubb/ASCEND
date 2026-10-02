@@ -1,10 +1,8 @@
 """Port of frontend/src/utils/aiBrief.ts (the "Daily Mission Brief" feature).
 
-Same-day caching and the rolling "don't repeat this quote" history used to
-live in localStorage on the client. That stays a frontend concern: the
-frontend still owns the cache and passes its recent quote history in on each
-call (see BriefRequest.recent_quotes) so the "don't repeat" behavior is
-preserved without giving the backend its own persistent store for this.
+Stateless: computes the prompt and calls Groq every time. Once-per-day
+storage and the "don't repeat a recent quote" history live in
+services/ai_generations.py and routes/ai.py.
 """
 
 import json
@@ -18,14 +16,14 @@ VALID_STATUSES = {"elite", "solid", "slipping", "critical"}
 BRIEF_GRACE_DAYS = 3
 
 
-def _get_days_since_registration(created_at: Optional[str]) -> int:
+def _get_days_since_registration(created_at: Optional[str], today: Optional[date] = None) -> int:
     if not created_at:
         return 1
     try:
         parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
     except ValueError:
         return 1
-    today = datetime.now(timezone.utc).date()
+    today = today or datetime.now(timezone.utc).date()
     return max(1, (today - parsed.date()).days + 1)
 
 
@@ -90,6 +88,7 @@ def _normalize_motivation(motivation: str, is_grace_period: bool, username: str)
 
 def _build_fallback_brief(status: str, is_grace_period: bool, username: str) -> dict:
     return {
+        "is_fallback": True,
         "status": _clamp_status_for_grace(status, is_grace_period),
         "quote": "Start simple. Stack one clean win at a time."
         if is_grace_period
@@ -104,22 +103,26 @@ def get_daily_brief(
     logs: list[dict],
     created_at: Optional[str] = None,
     recent_quotes: Optional[list[str]] = None,
+    today: Optional[date] = None,
 ) -> Optional[dict]:
+    """Returns the brief, or the deterministic fallback brief (marked with
+    is_fallback=True) when Groq is unavailable or returns junk."""
     recent_quotes = recent_quotes or []
-    today_str = date.today().isoformat()
+    today = today or date.today()
+    today_str = today.isoformat()
 
     active_habits = [h for h in habits if not h["archived"]]
     habit_intent_context = habit_intent.build_habit_intent_context(active_habits)
-    days_since_registration = _get_days_since_registration(created_at)
+    days_since_registration = _get_days_since_registration(created_at, today)
     is_grace_period = days_since_registration <= BRIEF_GRACE_DAYS
-    discipline_index = calculations.calculate_discipline_index(habits, logs)
+    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
     today_weighted_score = round(calculations.calculate_weighted_score(habits, logs, today_str))
     today_completion_percent = round(calculations.calculate_daily_completion(habits, logs, today_str))
     target_status = _get_status_from_index(discipline_index, is_grace_period)
-    day_of_week = date.today().strftime("%A")
+    day_of_week = today.strftime("%A")
 
     habit_lines = []
-    seven_days_ago = date.today() - timedelta(days=6)
+    seven_days_ago = today - timedelta(days=6)
     for habit in active_habits:
         streak = calculations.get_streak(habit["id"], logs, today_str)
         completed_dates = {l["date"] for l in logs if l["habit_id"] == habit["id"] and l["status"] == "completed"}

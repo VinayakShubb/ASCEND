@@ -1,16 +1,15 @@
-from typing import Dict, List, Literal, Optional
+from typing import Annotated, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Status = Literal["elite", "solid", "slipping", "critical"]
 
 
 class BriefRequest(BaseModel):
-    # Frontend's localStorage quote history, so the prompt can tell the model
-    # which quotes not to repeat. Same-day caching lives entirely client-side
-    # now, so there's no force_refresh flag here -- the frontend just doesn't
-    # call this endpoint when its cached brief is still fresh.
-    recent_quotes: List[str] = []
+    # Optional quote history from the frontend's old localStorage cache. The
+    # server now keeps its own history (ai_generations), and merges these in
+    # so quotes from before the switch still aren't repeated.
+    recent_quotes: List[Annotated[str, Field(max_length=300)]] = Field(default=[], max_length=30)
 
 
 class BriefOutput(BaseModel):

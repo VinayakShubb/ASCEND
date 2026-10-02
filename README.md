@@ -118,7 +118,7 @@ python -m venv .venv
 .venv/Scripts/activate        # Windows: .venv\Scripts\activate | macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env          # fill in SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GROQ_API_KEY
+cp .env.example .env          # fill in the Supabase keys and GROQ_API_KEYS (see .env.example)
 python -m uvicorn main:app --reload   # http://localhost:8000
 ```
 
@@ -126,11 +126,21 @@ Run the test suite:
 
 ```bash
 cd backend
-pytest              # 93 tests, no real Supabase/Groq credentials needed -- see tests/fakes.py
+pytest              # no real Supabase/Groq credentials needed -- see tests/fakes.py
 ```
 
-The database schema lives in `backend/supabase_schema.sql` — run it once against a fresh Supabase
-project to create the `profiles`, `habits`, and `habit_logs` tables.
+**Database.** `backend/supabase_schema.sql` is the full schema for a *new* Supabase project.
+An existing database is upgraded by running the files in `backend/migrations/` in order
+(Supabase dashboard → SQL Editor → paste → Run). Each migration is safe to run twice.
+
+**Groq keys.** Put one or more keys in `GROQ_API_KEYS`, comma-separated. The first is the main
+key; the rest are only tried when the one before fails. AI output is stored per user per day
+(`ai_generations` table): the home brief and the analytics coach run once a day, CIPHER up to
+`AI_CIPHER_DAILY_LIMIT` times (default 20), after which the latest analysis is shown.
+
+**Deploying (Render).** Set the same variables as `.env` in the service's Environment tab.
+`FRONTEND_URL` must be the live frontend URL (CORS + Google login redirect); extra domains go in
+`FRONTEND_URLS`. Point an uptime monitor at `/health`, which also checks the database.
 
 ### Frontend
 

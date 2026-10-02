@@ -1,15 +1,14 @@
 """Port of frontend/src/utils/aiCoach.ts -- the "Live AI Coach" sidebar
 insight and the larger "CIPHER" behavioral analysis.
 
-Same-day caching (localStorage in the original) stays a frontend concern;
-these functions are stateless and just compute + call Groq every time
-they're invoked. The frontend decides whether it even needs to call this
-endpoint today.
+These functions are stateless and just compute + call Groq every time
+they're invoked. Daily limits and storage of past results live in
+services/ai_generations.py and routes/ai.py.
 """
 
 import json
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from services import calculations, groq_client, habit_intent
@@ -90,7 +89,7 @@ def _weekly_completion_and_streak(habit_id: str, habit_name: str, logs: list[dic
     streak = calculations.get_streak(habit_id, logs, today_str)
     completed_dates = {l["date"] for l in logs if l["habit_id"] == habit_id and l["status"] == "completed"}
 
-    seven_days_ago = date.today() - timedelta(days=6)
+    seven_days_ago = date.fromisoformat(today_str) - timedelta(days=6)
     weekly_completion = 0
     for i in range(7):
         check_date = (seven_days_ago + timedelta(days=i)).isoformat()
@@ -105,11 +104,12 @@ def _weekly_completion_and_streak(habit_id: str, habit_name: str, logs: list[dic
 # FEATURE 3 -- Live AI Coach (Analytics sidebar)
 # -------------------------------------------------------------------------
 
-def get_coach_insight(user_id: str, habits: list[dict], logs: list[dict]) -> Optional[dict]:
-    discipline_index = calculations.calculate_discipline_index(habits, logs)
-    today_str = date.today().isoformat()
+def get_coach_insight(user_id: str, habits: list[dict], logs: list[dict], today: Optional[date] = None) -> Optional[dict]:
+    today = today or date.today()
+    today_str = today.isoformat()
+    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
     today_completion_percent = round(calculations.calculate_daily_completion(habits, logs, today_str))
-    day_of_week = DAY_NAMES[(date.today().weekday() + 1) % 7]  # Python Mon=0 -> JS-style Sun=0
+    day_of_week = DAY_NAMES[(today.weekday() + 1) % 7]  # Python Mon=0 -> JS-style Sun=0
 
     active_habits = [h for h in habits if not h["archived"]]
     if not active_habits:
@@ -238,24 +238,25 @@ def get_cipher_analysis(
     habits: list[dict],
     logs: list[dict],
     is_new_user: bool = False,
+    today: Optional[date] = None,
 ) -> Optional[dict]:
     active_habits = [h for h in habits if not h["archived"]]
     if not active_habits:
         return None
     habit_intent_context = habit_intent.build_habit_intent_context(active_habits)
 
-    today_str = date.today().isoformat()
-    discipline_index = calculations.calculate_discipline_index(habits, logs)
+    today = today or date.today()
+    today_str = today.isoformat()
+    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
 
     user_registration_raw = datetime.fromisoformat(user_created_at.replace("Z", "+00:00")) if user_created_at else datetime.now()
     user_registration_date = user_registration_raw.date().isoformat()
     user_date = date.fromisoformat(user_registration_date)
-    today = date.today()
     days_since_registration = max(1, abs((today - user_date).days) + 1)
 
     # Per-habit stats
     habit_performances = []
-    cutoff_30d = date.today() - timedelta(days=30)
+    cutoff_30d = today - timedelta(days=30)
     for h in active_habits:
         h_logs = [l for l in logs if l["habit_id"] == h["id"] and l["status"] == "completed"]
         valid_days = min(30, days_since_registration)
@@ -306,7 +307,7 @@ def get_cipher_analysis(
     half_mark = max_days_to_analyze // 2
 
     for i in range(max_days_to_analyze - 1, -1, -1):
-        d = date.today() - timedelta(days=i)
+        d = today - timedelta(days=i)
         date_str_check = d.isoformat()
         score = round(calculations.calculate_weighted_score(habits, logs, date_str_check))
         raw_pct = round(calculations.calculate_daily_completion(habits, logs, date_str_check))
@@ -567,5 +568,5 @@ Only reference data provided above. Do not invent events, dates, or patterns."""
             "dead_streak_start_date": dead_streak_start_str,
         },
     )
-    parsed["analyzedAt"] = datetime.utcnow().isoformat()
+    parsed["analyzedAt"] = datetime.now(timezone.utc).isoformat()
     return parsed
