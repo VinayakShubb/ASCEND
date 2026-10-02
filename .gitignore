@@ -36,3 +36,4 @@ __pycache__/
 .venv/
 .pytest_cache/
 .hypothesis/
+.impeccable/review/
