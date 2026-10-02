@@ -7,6 +7,9 @@ interface DataContextType {
   habits: Habit[];
   logs: HabitLog[];
   loading: boolean;
+  /* Set when the initial load fails; `reload` tries again. */
+  loadError: string | null;
+  reload: () => void;
   addHabit: (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
@@ -26,7 +29,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true so pages never flash "no habits" before the first fetch.
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = () => setReloadKey(k => k + 1);
 
   // Fetch initial data. Junk-name filtering now happens server-side
   // (services/user_data.py) instead of here.
@@ -34,25 +41,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (!isAuthenticated) {
       setHabits([]);
       setLogs([]);
+      setLoading(false);
       return;
     }
 
+    let stale = false;
     const fetchData = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const [habitsData, logsData] = await Promise.all([
           api.get<Habit[]>('/habits'),
           api.get<HabitLog[]>('/logs'),
         ]);
+        if (stale) return;
         setHabits(habitsData);
         setLogs(logsData);
+      } catch {
+        if (!stale) setLoadError('Could not load your habits. Check your connection and try again.');
       } finally {
-        setLoading(false);
+        if (!stale) setLoading(false);
       }
     };
 
     fetchData();
-  }, [isAuthenticated]);
+    return () => {
+      stale = true;
+    };
+  }, [isAuthenticated, reloadKey]);
 
   const addHabit = async (habitData: Omit<Habit, 'id' | 'created_at' | 'archived'>) => {
     // Server silently returns null for an invalid/blank name instead of an
@@ -120,7 +136,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <DataContext.Provider
-      value={{ habits, logs, loading, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus }}
+      value={{ habits, logs, loading, loadError, reload, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, getHabitStatus }}
     >
       {children}
     </DataContext.Provider>

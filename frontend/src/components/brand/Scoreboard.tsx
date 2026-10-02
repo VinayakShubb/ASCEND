@@ -33,7 +33,10 @@ export function BoardNumber({
 function DigitCell({ char, flipOnMount, delay }: { char: string; flipOnMount: boolean; delay: number }) {
   const reduce = useReducedMotion();
   return (
-    <span aria-hidden className="relative inline-block h-[1em] w-[0.72em] overflow-hidden">
+    // line-height is pinned here, on the cell: a font-size class passed to
+    // BoardNumber makes tailwind-merge drop `leading-none`, and an inherited
+    // 1.55 line height pushes the glyphs down and clips their bottom row.
+    <span aria-hidden className="relative inline-block h-[1em] w-[0.72em] overflow-hidden" style={{ lineHeight: 1 }}>
       <AnimatePresence initial={flipOnMount && !reduce} mode="popLayout">
         <motion.span
           key={char}

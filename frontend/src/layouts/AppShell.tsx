@@ -1,7 +1,9 @@
 import { GearSix, SignOut } from '@phosphor-icons/react';
+import { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { Logo } from '../components/brand/Logo';
+import { Skeleton } from '../components/ui/Feedback';
 import { useAuth } from '../context/AuthContext';
 import { duration, ease } from '../design/motion';
 import { cn } from '../lib/cn';
@@ -69,7 +71,10 @@ export function AppShell() {
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
             className="mx-auto w-full max-w-[1180px] px-4 pb-32 pt-8 sm:px-8 lg:pb-16 lg:pt-12"
           >
-            <Outlet />
+            {/* Pages load as separate chunks; keep the shell in place meanwhile. */}
+            <Suspense fallback={<PageLoading />}>
+              <Outlet />
+            </Suspense>
           </motion.main>
         </AnimatePresence>
       </div>
@@ -127,5 +132,16 @@ function TabLink({ item }: { item: NavItem }) {
         </>
       )}
     </NavLink>
+  );
+}
+
+function PageLoading() {
+  return (
+    <div aria-busy="true" aria-label="Loading page" className="flex flex-col gap-4">
+      <Skeleton className="h-14 w-56" />
+      <Skeleton className="h-28 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </div>
   );
 }

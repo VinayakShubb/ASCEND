@@ -39,12 +39,12 @@ export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: Cip
   }, []);
 
   const colorMap: Record<CipherMood, string> = {
-    elite: '#00ff88',
-    solid: '#00cc66',
-    slipping: '#ffaa00',
-    critical: '#ff4444',
-    analyzing: 'var(--accent-primary)',
-    idle: 'var(--text-muted)'
+    elite: '#4fa36b',
+    solid: '#4fa36b',
+    slipping: '#e2a23b',
+    critical: '#e05a43',
+    analyzing: '#d4573b',
+    idle: '#8a857d'
   };
 
   const eyeColor = colorMap[mood];
@@ -67,10 +67,11 @@ export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: Cip
 
   // Animation classes
   let animationClass = '';
-  if (mood === 'critical') animationClass = 'animate-cipher-rage';
-  else if (mood === 'slipping') animationClass = 'animate-cipher-twitch';
-  else if (mood === 'analyzing') animationClass = 'animate-cipher-pulse';
-  else if (mood === 'elite') animationClass = 'animate-cipher-elite';
+  // Class names match the keyframe rules in cipherAvatar.css.
+  if (mood === 'critical') animationClass = 'anim-critical';
+  else if (mood === 'slipping') animationClass = 'anim-slipping';
+  else if (mood === 'analyzing') animationClass = 'anim-analyzing';
+  else if (mood === 'elite') animationClass = 'anim-elite';
 
   return (
     <div 
@@ -95,7 +96,7 @@ export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: Cip
         </defs>
 
         {/* Antenna */}
-        <line x1="50" y1="16" x2="50" y2="6" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="50" y1="16" x2="50" y2="6" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
         <circle 
             cx="50" cy="4" r="3" 
             fill={eyeColor} 
@@ -103,7 +104,7 @@ export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: Cip
         />
 
         {/* Head — boxy rectangle */}
-        <rect x="22" y="18" width="56" height="40" rx="5" fill="#0a0a0a" stroke="#2a2a2a" strokeWidth="2.5"/>
+        <rect x="22" y="18" width="56" height="40" rx="5" fill="#0d0f12" stroke="#2e343c" strokeWidth="2.5"/>
 
         {/* Eyebrows — angular lines */}
         <path 
@@ -145,12 +146,12 @@ export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: Cip
         )}
 
         {/* Body */}
-        <rect x="30" y="63" width="40" height="26" rx="4" fill="none" stroke="#2a2a2a" strokeWidth="2"/>
+        <rect x="30" y="63" width="40" height="26" rx="4" fill="none" stroke="#2e343c" strokeWidth="2"/>
         {/* Body detail lines */}
-        <line x1="35" y1="73" x2="41" y2="73" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="59" y1="73" x2="65" y2="73" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="35" y1="79" x2="41" y2="79" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="59" y1="79" x2="65" y2="79" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="35" y1="73" x2="41" y2="73" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="59" y1="73" x2="65" y2="73" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="35" y1="79" x2="41" y2="79" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="59" y1="79" x2="65" y2="79" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     </div>
   );

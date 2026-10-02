@@ -15,19 +15,21 @@ interface LaneRowProps {
   meta?: ReactNode;
   onToggle: () => void;
   disabled?: boolean;
+  /* Which day this row is for, in words, for screen readers ("today", "on 12 Sep"). */
+  dayLabel?: string;
 }
 
 /* A habit as a lane. The whole row is the control (a large touch target);
    completing it crosses the finish line: a lane-white sweep runs across the
    row and the finish box fills track red. */
-export function LaneRow({ lane, name, difficulty, done, streak = 0, meta, onToggle, disabled }: LaneRowProps) {
+export function LaneRow({ lane, name, difficulty, done, streak = 0, meta, onToggle, disabled, dayLabel = 'today' }: LaneRowProps) {
   const reduce = useReducedMotion();
   return (
     <motion.button
       type="button"
       role="checkbox"
       aria-checked={done}
-      aria-label={`${name}, ${difficulty}, ${done ? 'done today' : 'not done yet'}`}
+      aria-label={`${name}, ${difficulty}, ${done ? 'done' : 'not done'} ${dayLabel}`}
       onClick={onToggle}
       disabled={disabled}
       whileTap={reduce ? undefined : { scale: 0.985 }}

@@ -1,20 +1,25 @@
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, type ComponentType, type ReactNode } from 'react';
 import { MotionConfig } from 'motion/react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { useAuth } from './context/AuthContext';
 import { AppShell } from './layouts/AppShell';
-import { LandingPage } from './pages/landing/LandingPage';
-import { HowItWorksPage } from './pages/public/HowItWorksPage';
-import { LoginPage } from './pages/auth/LoginPage';
-import { SignupPage } from './pages/auth/SignupPage';
-import { TodayPage } from './pages/app/TodayPage';
-import { HabitsPage } from './pages/app/HabitsPage';
-import { CalendarPage } from './pages/app/CalendarPage';
-import { InsightsPage } from './pages/app/InsightsPage';
-import { CipherPage } from './pages/app/CipherPage';
-import { SettingsPage } from './pages/app/SettingsPage';
 import { NotFoundPage } from './pages/public/NotFoundPage';
 import { SplashScreen } from './components/brand/SplashScreen';
+
+/* Each page is its own chunk: the landing page's scroll animation (GSAP,
+   Lenis) and the charts (recharts) only download where they are used. */
+const named = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) =>
+  lazy(() => loader().then(m => ({ default: m[name] })));
+const LandingPage = named(() => import('./pages/landing/LandingPage'), 'LandingPage');
+const HowItWorksPage = named(() => import('./pages/public/HowItWorksPage'), 'HowItWorksPage');
+const LoginPage = named(() => import('./pages/auth/LoginPage'), 'LoginPage');
+const SignupPage = named(() => import('./pages/auth/SignupPage'), 'SignupPage');
+const TodayPage = named(() => import('./pages/app/TodayPage'), 'TodayPage');
+const HabitsPage = named(() => import('./pages/app/HabitsPage'), 'HabitsPage');
+const CalendarPage = named(() => import('./pages/app/CalendarPage'), 'CalendarPage');
+const InsightsPage = named(() => import('./pages/app/InsightsPage'), 'InsightsPage');
+const CipherPage = named(() => import('./pages/app/CipherPage'), 'CipherPage');
+const SettingsPage = named(() => import('./pages/app/SettingsPage'), 'SettingsPage');
 
 /* Old hash URLs (#dashboard, #cipher, ...) from before real routes. */
 const LEGACY_HASH_ROUTES: Record<string, string> = {
@@ -73,6 +78,7 @@ export default function App() {
       <BrowserRouter>
         <LegacyHashRedirect />
         <AfterOAuthRedirect />
+        <Suspense fallback={<SplashScreen />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -96,6 +102,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </MotionConfig>
   );
