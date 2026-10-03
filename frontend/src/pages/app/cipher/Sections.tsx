@@ -317,10 +317,15 @@ export function ExecutionType({ analysis }: Props) {
   const name = personalityName(personality.type);
   return (
     <section aria-labelledby="cipher-type" className="border-t border-lane-line pt-10">
-      <SectionHead id="cipher-type" title="Execution type" />
+      <SectionHead
+        id="cipher-type"
+        title="Execution type"
+        sub="The working pattern CIPHER reads from how consistently you show up across your season"
+      />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
         <div>
-          <p className="font-display text-[48px] uppercase text-lane sm:text-[64px]">{name}</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-lane-mute">Your pattern right now</p>
+          <p className="mt-2 font-display text-[48px] uppercase text-lane sm:text-[64px]">{name}</p>
           <p className="mt-4 max-w-[52ch] text-[17px] text-lane">{personality.tagline}</p>
         </div>
         <div className="border-t border-lane-line pt-5 lg:border-t-0 lg:border-l lg:pl-10 lg:pt-1">

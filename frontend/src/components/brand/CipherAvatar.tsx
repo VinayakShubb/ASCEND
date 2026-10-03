@@ -1,4 +1,5 @@
-import { useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 import './cipherAvatar.css';
 
 export type CipherMood = 'elite' | 'solid' | 'slipping' | 'critical' | 'analyzing' | 'idle';
@@ -8,23 +9,36 @@ export interface CipherAvatarProps {
   mood?: CipherMood;
   size?: AvatarSize;
   className?: string;
+  /* Cycle through every mood on a timer (for demos/marketing surfaces).
+     Overrides `mood`; held on `solid` for reduced-motion visitors. */
+  cycle?: boolean;
 }
 
 const SIZES: Record<AvatarSize, number> = { sm: 40, md: 56, lg: 100 };
+const CYCLE: CipherMood[] = ['idle', 'analyzing', 'solid', 'slipping', 'elite', 'critical'];
 
 /* A glass "analyst core": a floating sphere with expressive LED eyes inside a
    HUD instrument — a rotating tick-bezel, targeting brackets, and a data arc
    that fills to the Discipline Index band. Mood drives colour, eyes and the
    arc length via the data-mood attribute (see cipherAvatar.css). */
-export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: CipherAvatarProps) => {
+export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '', cycle = false }: CipherAvatarProps) => {
   const uid = useId().replace(/:/g, '');
   const px = SIZES[size];
+  const reduce = useReducedMotion();
   // One blink offset per orb so several on screen don't blink in lockstep.
   const blinkDelay = useMemo(() => `${(Math.random() * 4).toFixed(2)}s`, []);
 
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!cycle || reduce) return;
+    const id = window.setInterval(() => setIdx(n => (n + 1) % CYCLE.length), 2200);
+    return () => window.clearInterval(id);
+  }, [cycle, reduce]);
+  const activeMood = cycle && !reduce ? CYCLE[idx] : mood;
+
   return (
-    <div className={`cipher-orb ${className}`} data-mood={mood} style={{ width: px, height: px }}>
-      <svg className="orb-svg" viewBox="0 0 160 160" role="img" aria-label={`CIPHER ${mood}`}>
+    <div className={`cipher-orb ${className}`} data-mood={activeMood} style={{ width: px, height: px }}>
+      <svg className="orb-svg" viewBox="0 0 160 160" role="img" aria-label={`CIPHER ${activeMood}`}>
         <defs>
           <radialGradient id={`sph-${uid}`} cx="40%" cy="34%" r="72%">
             <stop offset="0%" stopColor="#262c34" />

@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { Hero } from './Hero';
-import { RaceSection } from './RaceSection';
+import { ScoreStory } from './ScoreStory';
 import { TryItSection } from './TryItSection';
 import { ScoringSection } from './ScoringSection';
 import { CipherSection } from './CipherSection';
@@ -58,7 +58,7 @@ export function LandingPage() {
       <div className="relative">
         <Hero onSeeScoring={scrollToRace} />
         <main>
-          <RaceSection />
+          <ScoreStory />
           <TryItSection />
           <ScoringSection />
           <CipherSection />

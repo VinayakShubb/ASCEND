@@ -30,8 +30,13 @@ export function AuthShowcase({ className }: { className?: string }) {
         />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-[22rem] flex-col items-center gap-7 text-center">
-        <CipherAvatar mood="solid" size="lg" />
+      <motion.div
+        className="relative z-10 flex w-full max-w-[22rem] flex-col items-center gap-6 text-center"
+        initial={reduce ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: duration.slow, ease: ease.out, delay: 0.1 }}
+      >
+        <CipherAvatar cycle size="lg" />
 
         <div>
           <h2 className="font-display text-[clamp(2rem,5vw,3rem)] uppercase leading-[0.9]">
@@ -72,7 +77,12 @@ export function AuthShowcase({ className }: { className?: string }) {
             </ol>
           </div>
         </ResultsBoard>
-      </div>
+
+        <p className="max-w-[30ch] text-[13px] leading-relaxed text-lane-dim">
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-track-bright">CIPHER's read</span>
+          Deep work is holding you back — two more days hits 86.
+        </p>
+      </motion.div>
     </div>
   );
 }

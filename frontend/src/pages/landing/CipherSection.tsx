@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
-import { CipherAvatar, type CipherMood } from '../../components/brand/CipherAvatar';
+import { CipherAvatar } from '../../components/brand/CipherAvatar';
 import { CIPHER_SAMPLE, SAMPLE_HABITS } from './sampleWeek';
 import { Reveal } from './Reveal';
 
@@ -9,21 +7,6 @@ const POINTS = [
   'It names what moved your index, and the one move that lifts it.',
   'Honest, not hype: it calls the problem and the fix, plainly.',
 ];
-
-/* On the landing, CIPHER runs through its whole range so visitors see it react
-   the way it will to their week. Reduced-motion visitors get it resting. */
-const CYCLE: CipherMood[] = ['idle', 'analyzing', 'solid', 'slipping', 'elite', 'critical'];
-
-function CyclingCipher() {
-  const reduce = useReducedMotion();
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (reduce) return;
-    const id = window.setInterval(() => setI(n => (n + 1) % CYCLE.length), 2200);
-    return () => window.clearInterval(id);
-  }, [reduce]);
-  return <CipherAvatar mood={reduce ? 'solid' : CYCLE[i]} size="lg" />;
-}
 
 /* CIPHER, the analyst: an official result sheet in lane white on the night
    ground. The lines are computed from the sample week with the backend's
@@ -34,7 +17,7 @@ export function CipherSection() {
       <div className="mx-auto grid max-w-[1400px] gap-12 px-4 sm:px-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-20">
         <Reveal className="flex flex-col items-start lg:pt-6">
           <div className="mb-3 flex w-full justify-center">
-            <CyclingCipher />
+            <CipherAvatar cycle size="lg" />
           </div>
           <h2 id="cipher-title" className="font-display mt-2 text-[clamp(2.25rem,6vw,4rem)] uppercase">
             CIPHER reads the sheet.
