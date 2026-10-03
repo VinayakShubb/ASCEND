@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useId, useMemo } from 'react';
 import './cipherAvatar.css';
 
 export type CipherMood = 'elite' | 'solid' | 'slipping' | 'critical' | 'analyzing' | 'idle';
@@ -10,150 +10,104 @@ export interface CipherAvatarProps {
   className?: string;
 }
 
+const SIZES: Record<AvatarSize, number> = { sm: 40, md: 56, lg: 100 };
+
+/* A glass "analyst core": a floating sphere with expressive LED eyes inside a
+   HUD instrument — a rotating tick-bezel, targeting brackets, and a data arc
+   that fills to the Discipline Index band. Mood drives colour, eyes and the
+   arc length via the data-mood attribute (see cipherAvatar.css). */
 export const CipherAvatar = ({ mood = 'idle', size = 'md', className = '' }: CipherAvatarProps) => {
-  const [blink, setBlink] = useState(false);
-  const uniqueId = useId().replace(/:/g, '');
-
-  const sizeMap = {
-    sm: 32,
-    md: 48,
-    lg: 64
-  };
-
-  const actualSize = sizeMap[size];
-
-  // Random blink logic
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const scheduleBlink = () => {
-      const waitTime = Math.random() * 3000 + 2000; // 2-5 seconds
-      timeoutId = setTimeout(() => {
-        setBlink(true);
-        setTimeout(() => setBlink(false), 150); // Blink duration
-        scheduleBlink();
-      }, waitTime);
-    };
-
-    scheduleBlink();
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  const colorMap: Record<CipherMood, string> = {
-    elite: '#4fa36b',
-    solid: '#4fa36b',
-    slipping: '#e2a23b',
-    critical: '#e05a43',
-    analyzing: '#d4573b',
-    idle: '#8a857d'
-  };
-
-  const eyeColor = colorMap[mood];
-
-  // Eyebrow paths — angular, mood-adaptive
-  let eyebrowLeftPath = "M 32 33 L 42 33";
-  let eyebrowRightPath = "M 58 33 L 68 33";
-  
-  if (mood === 'elite') {
-    // Elite: horizontal eyebrows (happy/relaxed)
-    eyebrowLeftPath = "M 32 33 L 42 33";
-    eyebrowRightPath = "M 58 33 L 68 33";
-  } else if (mood === 'slipping') {
-    eyebrowLeftPath = "M 32 31 L 42 34";
-    eyebrowRightPath = "M 58 34 L 68 31";
-  } else if (mood === 'critical') {
-    eyebrowLeftPath = "M 32 31 L 42 34";
-    eyebrowRightPath = "M 58 34 L 68 31";
-  }
-
-  // Animation classes
-  let animationClass = '';
-  // Class names match the keyframe rules in cipherAvatar.css.
-  if (mood === 'critical') animationClass = 'anim-critical';
-  else if (mood === 'slipping') animationClass = 'anim-slipping';
-  else if (mood === 'analyzing') animationClass = 'anim-analyzing';
-  else if (mood === 'elite') animationClass = 'anim-elite';
+  const uid = useId().replace(/:/g, '');
+  const px = SIZES[size];
+  // One blink offset per orb so several on screen don't blink in lockstep.
+  const blinkDelay = useMemo(() => `${(Math.random() * 4).toFixed(2)}s`, []);
 
   return (
-    <div 
-      className={`inline-block ${animationClass} ${className}`} 
-      style={{ width: actualSize, height: actualSize }}
-    >
-      <svg 
-        viewBox="0 0 100 100" 
-        width="100%" 
-        height="100%" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <div className={`cipher-orb ${className}`} data-mood={mood} style={{ width: px, height: px }}>
+      <svg className="orb-svg" viewBox="0 0 160 160" role="img" aria-label={`CIPHER ${mood}`}>
         <defs>
-          <filter id={`cipher-glow-${uniqueId}`}>
-            <feGaussianBlur stdDeviation={mood === 'idle' ? "0" : "2.5"} result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
+          <radialGradient id={`sph-${uid}`} cx="40%" cy="34%" r="72%">
+            <stop offset="0%" stopColor="#262c34" />
+            <stop offset="44%" stopColor="#13161c" />
+            <stop offset="100%" stopColor="#06070a" />
+          </radialGradient>
+          <radialGradient id={`halo-${uid}`} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="var(--m)" stopOpacity="0.45" />
+            <stop offset="58%" stopColor="var(--m)" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="var(--m)" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id={`wash-${uid}`} cx="50%" cy="82%" r="60%">
+            <stop offset="0%" stopColor="var(--m)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--m)" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id={`base-${uid}`} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="var(--m)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--m)" stopOpacity="0" />
+          </radialGradient>
+          <clipPath id={`eL-${uid}`}><circle cx="68" cy="78" r="12" /></clipPath>
+          <clipPath id={`eR-${uid}`}><circle cx="92" cy="78" r="12" /></clipPath>
         </defs>
 
-        {/* Antenna */}
-        <line x1="50" y1="16" x2="50" y2="6" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
-        <circle 
-            cx="50" cy="4" r="3" 
-            fill={eyeColor} 
-            filter={mood !== 'idle' ? `url(#cipher-glow-${uniqueId})` : undefined}
-        />
+        <circle className="halo" cx="80" cy="80" r="60" fill={`url(#halo-${uid})`} />
+        <ellipse className="baseglow" cx="80" cy="126" rx="38" ry="7" fill={`url(#base-${uid})`} />
 
-        {/* Head — boxy rectangle */}
-        <rect x="22" y="18" width="56" height="40" rx="5" fill="#0d0f12" stroke="#2e343c" strokeWidth="2.5"/>
-
-        {/* Eyebrows — angular lines */}
-        <path 
-            className="transition-all duration-300"
-            d={eyebrowLeftPath} 
-            stroke={eyeColor} strokeWidth="2" strokeLinecap="round" fill="none"
-        />
-        <path 
-            className="transition-all duration-300"
-            d={eyebrowRightPath} 
-            stroke={eyeColor} strokeWidth="2" strokeLinecap="round" fill="none"
-        />
-
-        {/* Eyes — rectangular LED blocks */}
-        <g style={{ 
-            transformOrigin: '50% 42px', 
-            transform: blink ? 'scaleY(0.08)' : 'scaleY(1)',
-            transition: 'transform 50ms'
-        }}>
-            <rect 
-                x="33" y="37" width="9" height="7" rx="1"
-                fill={eyeColor} 
-                filter={mood !== 'idle' ? `url(#cipher-glow-${uniqueId})` : undefined}
-            />
-            <rect 
-                x="58" y="37" width="9" height="7" rx="1"
-                fill={eyeColor} 
-                filter={mood !== 'idle' ? `url(#cipher-glow-${uniqueId})` : undefined}
-            />
+        <g className="brackets">
+          <path className="bracket" d="M30 46 L30 30 L46 30" />
+          <path className="bracket" d="M114 30 L130 30 L130 46" />
+          <path className="bracket" d="M130 114 L130 130 L114 130" />
+          <path className="bracket" d="M46 130 L30 130 L30 114" />
         </g>
 
-        {/* Mouth — only elite gets a small happy smile */}
-        {mood === 'elite' && (
-          <path
-            d="M 43 51 Q 50 55 57 51"
-            stroke={eyeColor} strokeWidth="1.8" strokeLinecap="round" fill="none"
-            filter={`url(#cipher-glow-${uniqueId})`}
-          />
-        )}
+        <g className="bezel">
+          <circle className="bezel-ring" cx="80" cy="80" r="67" />
+          <circle className="node" cx="80" cy="13" r="3" />
+          <circle className="node" cx="138" cy="113" r="2.4" />
+          <circle className="node" cx="22" cy="113" r="2.4" />
+        </g>
 
-        {/* Body */}
-        <rect x="30" y="63" width="40" height="26" rx="4" fill="none" stroke="#2e343c" strokeWidth="2"/>
-        {/* Body detail lines */}
-        <line x1="35" y1="73" x2="41" y2="73" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="59" y1="73" x2="65" y2="73" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="35" y1="79" x2="41" y2="79" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="59" y1="79" x2="65" y2="79" stroke="#2e343c" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle className="ditrack" cx="80" cy="80" r="52" />
+        <g className="diwrap"><circle className="diarc" cx="80" cy="80" r="52" /></g>
+
+        <circle className="sphere" cx="80" cy="80" r="40" fill={`url(#sph-${uid})`} />
+        <circle className="sphere" cx="80" cy="80" r="40" fill={`url(#wash-${uid})`} />
+        <circle className="sphere-rim" cx="80" cy="80" r="40" />
+        <ellipse className="specular" cx="64" cy="58" rx="16" ry="10" />
+        <ellipse className="specular2" cx="60" cy="54" rx="4" ry="2.6" />
+
+        <line className="scan" x1="48" y1="80" x2="112" y2="80" />
+
+        <g className="face">
+          <ellipse className="cheek" cx="58" cy="90" rx="5.5" ry="3.4" />
+          <ellipse className="cheek" cx="102" cy="90" rx="5.5" ry="3.4" />
+          <line className="brow brow-l" x1="59" y1="60" x2="77" y2="60" />
+          <line className="brow brow-r" x1="83" y1="60" x2="101" y2="60" />
+          <g className="eye eye-l" clipPath={`url(#eL-${uid})`} style={{ animationDelay: blinkDelay }}>
+            <circle className="socket" cx="68" cy="78" r="12" />
+            <circle className="iris" cx="68" cy="78" r="8.6" />
+            <circle className="catch" cx="64.5" cy="74.5" r="2.7" />
+            <circle className="catch2" cx="71" cy="81" r="1.3" />
+            <rect className="lid top" x="52" y="52" width="32" height="24" rx="9" />
+            <rect className="lid bot" x="52" y="80" width="32" height="24" rx="9" />
+          </g>
+          <g className="eye eye-r" clipPath={`url(#eR-${uid})`} style={{ animationDelay: blinkDelay }}>
+            <circle className="socket" cx="92" cy="78" r="12" />
+            <circle className="iris" cx="92" cy="78" r="8.6" />
+            <circle className="catch" cx="88.5" cy="74.5" r="2.7" />
+            <circle className="catch2" cx="95" cy="81" r="1.3" />
+            <rect className="lid top" x="76" y="52" width="32" height="24" rx="9" />
+            <rect className="lid bot" x="76" y="80" width="32" height="24" rx="9" />
+          </g>
+          <path className="heye heye-l" d="M60 81 Q68 70 76 81" />
+          <path className="heye heye-r" d="M84 81 Q92 70 100 81" />
+          <path className="mouth" d="M70 100 Q80 107 90 100" />
+        </g>
+
+        <g className="sparkles">
+          <path className="spark s1" d="M34 48 l2.2 4.6 l4.6 2.2 l-4.6 2.2 l-2.2 4.6 l-2.2 -4.6 l-4.6 -2.2 l4.6 -2.2 z" />
+          <path className="spark s2" d="M124 42 l1.7 3.6 l3.6 1.7 l-3.6 1.7 l-1.7 3.6 l-1.7 -3.6 l-3.6 -1.7 l3.6 -1.7 z" />
+          <path className="spark s3" d="M120 112 l1.7 3.6 l3.6 1.7 l-3.6 1.7 l-1.7 3.6 l-1.7 -3.6 l-3.6 -1.7 l3.6 -1.7 z" />
+        </g>
       </svg>
     </div>
   );
 };
-

@@ -1,69 +1,117 @@
-/* cipherAvatar.css */
+/* CIPHER orb avatar — a glass analyst core inside a HUD instrument.
+   Driven entirely by the data-mood attribute on .cipher-orb. Pure CSS +
+   transforms, no raster images; goes still under reduced-motion. */
 
-.cipher-avatar {
-  overflow: visible;
+.cipher-orb {
+  display: inline-block;
+  line-height: 0;
 }
+.cipher-orb[data-mood="idle"]      { --m:#8a857d; --ring:#6b665f; --arc:26; }
+.cipher-orb[data-mood="analyzing"] { --m:#d4573b; --ring:#d4573b; --arc:70; }
+.cipher-orb[data-mood="elite"]     { --m:#5ad389; --ring:#4fa36b; --arc:294; }
+.cipher-orb[data-mood="solid"]     { --m:#4fa36b; --ring:#3f8c5c; --arc:212; }
+.cipher-orb[data-mood="slipping"]  { --m:#e2a23b; --ring:#e2a23b; --arc:114; }
+.cipher-orb[data-mood="critical"]  { --m:#e05a43; --ring:#e05a43; --arc:39; }
 
-/* Feature transitions */
-.cipher-feature {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.cipher-orb .orb-svg { width:100%; height:100%; overflow:visible; animation:co-bob 4.6s ease-in-out infinite; }
 
-/* Blinking */
-@keyframes randomBlink {
-  0%, 96%, 100% { transform: scaleY(1); }
-  98% { transform: scaleY(0.1); }
-}
+.cipher-orb .halo    { transform-box:fill-box; transform-origin:center; animation:co-breathe 5s ease-in-out infinite; }
+.cipher-orb .baseglow{ transform-box:fill-box; transform-origin:center; animation:co-breathe 5s ease-in-out infinite; }
 
-.cipher-eyes-blink {
-  transform-origin: 50% 40px;
-  animation: randomBlink 4s infinite;
-}
+.cipher-orb .bezel     { transform-origin:80px 80px; animation:co-spin 26s linear infinite; }
+.cipher-orb .bezel-ring{ fill:none; stroke:var(--m); stroke-opacity:.28; stroke-width:2.4; stroke-dasharray:1.5 7; }
+.cipher-orb .node      { fill:var(--m); filter:drop-shadow(0 0 4px var(--m)); }
+.cipher-orb .brackets  { transform-origin:80px 80px; animation:co-breathe2 4.5s ease-in-out infinite; }
+.cipher-orb .bracket   { fill:none; stroke:var(--ring); stroke-opacity:.5; stroke-width:2; stroke-linecap:round; }
+.cipher-orb .ditrack   { fill:none; stroke:rgb(238 234 226 / 0.2); stroke-width:3; }
+.cipher-orb .diwrap    { transform:rotate(-90deg); transform-origin:80px 80px; }
+.cipher-orb .diarc     { fill:none; stroke:var(--m); stroke-width:3; stroke-linecap:round;
+  stroke-dasharray:var(--arc) 1000; transform-origin:80px 80px;
+  transition:stroke-dasharray .6s ease; filter:drop-shadow(0 0 5px var(--m)); }
 
-/* --- MOOD ANIMATIONS --- */
+.cipher-orb .sphere-rim{ fill:none; stroke:rgb(238 234 226 / 0.2); stroke-width:1.5; }
+.cipher-orb .specular  { fill:#eeeae2; opacity:.12; }
+.cipher-orb .specular2 { fill:#eeeae2; opacity:.5; }
+.cipher-orb .scan      { stroke:var(--m); stroke-width:1.5; stroke-opacity:0; stroke-linecap:round; filter:drop-shadow(0 0 5px var(--m)); }
 
-/* ELITE: subtle opacity pulse */
-@keyframes elitePulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
-.anim-elite .cipher-face {
-  animation: elitePulse 3s infinite ease-in-out;
-}
+.cipher-orb .cheek   { fill:var(--m); opacity:0; transition:opacity .4s; }
+.cipher-orb .socket  { fill:#05060a; }
+.cipher-orb .iris    { fill:var(--m); filter:drop-shadow(0 0 7px var(--m)); }
+.cipher-orb .catch   { fill:#fff; opacity:.9; }
+.cipher-orb .catch2  { fill:#fff; opacity:.5; }
+.cipher-orb .eye     { transform-box:fill-box; transform-origin:center; animation:co-blink 5.4s infinite; transition:opacity .3s; }
+.cipher-orb .heye    { fill:none; stroke:var(--m); stroke-width:3.6; stroke-linecap:round; opacity:0;
+  transition:opacity .3s; filter:drop-shadow(0 0 6px var(--m)); }
+.cipher-orb .lid     { fill:#05060a; transition:transform .4s cubic-bezier(.4,0,.2,1); transform-box:fill-box; transform-origin:center; }
+.cipher-orb .lid.top { transform:translateY(-7px); }
+.cipher-orb .lid.bot { transform:translateY(11px); }
+.cipher-orb .brow    { stroke:var(--m); stroke-width:3.4; stroke-linecap:round; opacity:0;
+  transition:transform .4s, opacity .4s; transform-box:fill-box; transform-origin:center; filter:drop-shadow(0 0 3px var(--m)); }
+.cipher-orb .mouth   { fill:none; stroke:var(--m); stroke-width:2.6; stroke-linecap:round;
+  transform-box:fill-box; transform-origin:center; transition:transform .4s, opacity .4s;
+  transform:scaleY(.08); filter:drop-shadow(0 0 4px var(--m)); }
+.cipher-orb .spark   { fill:var(--m); opacity:0; transform-box:fill-box; transform-origin:center; filter:drop-shadow(0 0 3px var(--m)); }
 
-/* SLIPPING: angry twitch */
-@keyframes slipTwitch {
-  0%, 95%, 100% { transform: translateY(0); }
-  97.5% { transform: translateY(-0.5px); }
-}
-.anim-slipping .cipher-head-group {
-  animation: slipTwitch 1.5s infinite;
-}
+/* solid */
+.cipher-orb[data-mood="solid"] .lid.top{ transform:translateY(-16px); }
+.cipher-orb[data-mood="solid"] .lid.bot{ transform:translateY(14px); }
+.cipher-orb[data-mood="solid"] .mouth  { transform:scaleY(.5); }
+.cipher-orb[data-mood="solid"] .cheek  { opacity:.22; }
+/* elite */
+.cipher-orb[data-mood="elite"] .eye  { opacity:0; }
+.cipher-orb[data-mood="elite"] .heye { opacity:1; }
+.cipher-orb[data-mood="elite"] .mouth{ transform:scaleY(1); }
+.cipher-orb[data-mood="elite"] .cheek{ opacity:.3; }
+.cipher-orb[data-mood="elite"] .orb-svg{ animation:co-bobHappy 2.7s ease-in-out infinite; }
+.cipher-orb[data-mood="elite"] .spark{ animation:co-twinkle 2.4s ease-in-out infinite; }
+.cipher-orb[data-mood="elite"] .spark.s2{ animation-delay:.6s; }
+.cipher-orb[data-mood="elite"] .spark.s3{ animation-delay:1.2s; }
+.cipher-orb[data-mood="elite"] .bezel{ animation-duration:18s; }
+/* analyzing */
+.cipher-orb[data-mood="analyzing"] .lid.top{ transform:translateY(-5px); }
+.cipher-orb[data-mood="analyzing"] .lid.bot{ transform:translateY(8px); }
+.cipher-orb[data-mood="analyzing"] .bezel  { animation-duration:9s; }
+.cipher-orb[data-mood="analyzing"] .diarc  { animation:co-spin 1.5s linear infinite; }
+.cipher-orb[data-mood="analyzing"] .iris   { animation:co-irispulse 1.4s ease-in-out infinite; }
+.cipher-orb[data-mood="analyzing"] .scan   { animation:co-scan 2.2s ease-in-out infinite; }
+.cipher-orb[data-mood="analyzing"] .orb-svg{ animation-duration:3.6s; }
+/* slipping */
+.cipher-orb[data-mood="slipping"] .eye-l .lid.top{ transform:translateY(-5px) rotate(10deg); }
+.cipher-orb[data-mood="slipping"] .eye-r .lid.top{ transform:translateY(-10px) rotate(-6deg); }
+.cipher-orb[data-mood="slipping"] .brow-l{ opacity:.9; transform:translateY(-3px) rotate(9deg); }
+.cipher-orb[data-mood="slipping"] .brow-r{ opacity:.9; transform:translateY(-6px) rotate(-5deg); }
+.cipher-orb[data-mood="slipping"] .mouth { transform:scaleY(.08) translateY(1px); }
+/* critical */
+.cipher-orb[data-mood="critical"] .eye-l .lid.top{ transform:translateY(-3px) rotate(-16deg); }
+.cipher-orb[data-mood="critical"] .eye-r .lid.top{ transform:translateY(-3px) rotate(16deg); }
+.cipher-orb[data-mood="critical"] .brow  { opacity:.95; }
+.cipher-orb[data-mood="critical"] .brow-l{ transform:translateY(-1px) rotate(-15deg); }
+.cipher-orb[data-mood="critical"] .brow-r{ transform:translateY(-1px) rotate(15deg); }
+.cipher-orb[data-mood="critical"] .mouth { transform:scaleY(-.8); }
+.cipher-orb[data-mood="critical"] .iris  { animation:co-irispulse .72s ease-in-out infinite; }
+.cipher-orb[data-mood="critical"] .orb-svg{ animation:co-shake .5s ease-in-out infinite; }
+.cipher-orb[data-mood="critical"] .bezel { animation-duration:14s; }
 
-/* CRITICAL: rage shake */
-@keyframes rageShake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-1.5px, 0.5px); }
-  50% { transform: translate(1.5px, -0.5px); }
-  75% { transform: translate(-0.5px, 1.5px); }
-}
-.anim-critical .cipher-head-group {
-  animation: rageShake 0.5s infinite ease-in-out;
-}
+@keyframes co-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes co-bobHappy{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes co-shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-1.4px,.6px)}50%{transform:translate(1.4px,-.6px)}75%{transform:translate(-.6px,1.4px)}}
+@keyframes co-breathe{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes co-breathe2{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.85;transform:scale(1.03)}}
+@keyframes co-spin{to{transform:rotate(360deg)}}
+@keyframes co-blink{0%,95.5%,100%{transform:scaleY(1)}97.5%{transform:scaleY(.08)}}
+@keyframes co-irispulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes co-twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.9;transform:scale(1)}}
+@keyframes co-scan{0%{stroke-opacity:0;transform:translateY(-16px)}20%{stroke-opacity:.8}50%{transform:translateY(16px)}80%{stroke-opacity:.8}100%{stroke-opacity:0;transform:translateY(-16px)}}
 
-/* ANALYZING: scan */
-@keyframes eyeScan {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
-}
-@keyframes glowPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-.anim-analyzing .cipher-eyes-blink {
-  animation: eyeScan 2s infinite ease-in-out, randomBlink 4s infinite;
-}
-.anim-analyzing .cipher-eye-path {
-  animation: glowPulse 1.5s infinite ease-in-out;
+@media (prefers-reduced-motion: reduce){
+  .cipher-orb .orb-svg,
+  .cipher-orb .halo,
+  .cipher-orb .baseglow,
+  .cipher-orb .bezel,
+  .cipher-orb .diarc,
+  .cipher-orb .brackets,
+  .cipher-orb .eye,
+  .cipher-orb .iris,
+  .cipher-orb .scan,
+  .cipher-orb .spark { animation:none !important; }
 }
