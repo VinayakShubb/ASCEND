@@ -1,4 +1,6 @@
-import { CipherAvatar } from '../../components/brand/CipherAvatar';
+import { useEffect, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
+import { CipherAvatar, type CipherMood } from '../../components/brand/CipherAvatar';
 import { CIPHER_SAMPLE, SAMPLE_HABITS } from './sampleWeek';
 import { Reveal } from './Reveal';
 
@@ -8,6 +10,21 @@ const POINTS = [
   'Honest, not hype: it calls the problem and the fix, plainly.',
 ];
 
+/* On the landing, CIPHER runs through its whole range so visitors see it react
+   the way it will to their week. Reduced-motion visitors get it resting. */
+const CYCLE: CipherMood[] = ['idle', 'analyzing', 'solid', 'slipping', 'elite', 'critical'];
+
+function CyclingCipher() {
+  const reduce = useReducedMotion();
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => setI(n => (n + 1) % CYCLE.length), 2200);
+    return () => window.clearInterval(id);
+  }, [reduce]);
+  return <CipherAvatar mood={reduce ? 'solid' : CYCLE[i]} size="lg" />;
+}
+
 /* CIPHER, the analyst: an official result sheet in lane white on the night
    ground. The lines are computed from the sample week with the backend's
    rules; only the coach note is the kind of text the AI writes. */
@@ -16,8 +33,10 @@ export function CipherSection() {
     <section aria-labelledby="cipher-title" className="relative pb-28 pt-28 md:pb-36 md:pt-40">
       <div className="mx-auto grid max-w-[1400px] gap-12 px-4 sm:px-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-20">
         <Reveal className="flex flex-col items-start lg:pt-6">
-          <CipherAvatar mood="solid" size="lg" />
-          <h2 id="cipher-title" className="font-display mt-7 text-[clamp(2.25rem,6vw,4rem)] uppercase">
+          <div className="mb-3 flex w-full justify-center">
+            <CyclingCipher />
+          </div>
+          <h2 id="cipher-title" className="font-display mt-2 text-[clamp(2.25rem,6vw,4rem)] uppercase">
             CIPHER reads the sheet.
           </h2>
           <p className="mt-4 max-w-[46ch] text-[16px] leading-relaxed text-lane-dim sm:text-[17px]">

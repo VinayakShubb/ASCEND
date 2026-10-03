@@ -6,8 +6,8 @@ import { cn } from '../../lib/cn';
 export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <img src="/image.png" alt="" width={28} height={28} className="size-7 object-contain" />
-      {!compact && <span className="font-display text-[22px] uppercase leading-none tracking-[0.04em]">Ascend</span>}
+      <img src="/logo-mark.png" alt="" width={36} height={36} className="size-9 shrink-0 object-contain" />
+      {!compact && <span className="font-display text-[23px] uppercase leading-none tracking-[0.04em]">Ascend</span>}
       {compact && <span className="sr-only">Ascend</span>}
     </span>
   );

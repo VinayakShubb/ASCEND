@@ -42,9 +42,9 @@ export function AppShell() {
           'hover:w-[248px] focus-within:w-[248px]',
         )}
       >
-        <NavLink to="/app/today" className="mb-9 flex h-9 items-center gap-2.5 px-2" aria-label="ASCEND home">
-          <img src="/image.png" alt="" width={32} height={32} className="size-8 shrink-0 object-contain" />
-          <span className="whitespace-nowrap font-display text-[22px] uppercase leading-none tracking-[0.04em] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+        <NavLink to="/app/today" className="mb-9 flex h-10 items-center gap-2.5 px-1.5" aria-label="ASCEND home">
+          <img src="/logo-mark.png" alt="" width={38} height={38} className="size-[38px] shrink-0 object-contain" />
+          <span className="whitespace-nowrap font-display text-[23px] uppercase leading-none tracking-[0.04em] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
             Ascend
           </span>
         </NavLink>
@@ -72,8 +72,8 @@ export function AppShell() {
       {/* Phone top bar */}
       <header className="sticky top-0 z-40 flex h-14 items-center justify-center border-b border-lane-line bg-night-900/60 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
         <NavLink to="/app/today" aria-label="ASCEND home" className="flex items-center gap-2.5">
-          <img src="/image.png" alt="" width={28} height={28} className="size-7 object-contain" />
-          <span className="font-display text-[20px] uppercase leading-none tracking-[0.05em]">Ascend</span>
+          <img src="/logo-mark.png" alt="" width={34} height={34} className="size-[34px] shrink-0 object-contain" />
+          <span className="font-display text-[21px] uppercase leading-none tracking-[0.05em]">Ascend</span>
         </NavLink>
         <NavLink
           to="/app/settings"
