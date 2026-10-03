@@ -23,6 +23,8 @@ class CoachOutput(BaseModel):
     headline: str
     insight: str
     action: str
+    # When the note was written (it is generated once per day).
+    generatedAt: Optional[str] = None
 
 
 # --- CIPHER v2 (WHOOP-style analysis; numbers computed in Python) ---------

@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -38,6 +38,14 @@ def _validated(model, output: Optional[dict]) -> Optional[dict]:
     except ValidationError:
         logger.warning("%s from Groq failed validation", model.__name__)
         return None
+
+
+def _with_timestamp(output: Optional[dict]) -> Optional[dict]:
+    """Stamps a once-a-day note with when it was written, so the app can say
+    "written at 8:12" instead of passing an old note off as live."""
+    if output is None:
+        return None
+    return {**output, "generatedAt": datetime.now(timezone.utc).isoformat()}
 
 
 # POST (not GET) because it accepts an optional recent_quotes list in the
@@ -103,7 +111,7 @@ def get_coach(current_user: dict = Depends(get_current_user), today: date = Depe
         "coach",
         today,
         _data_fingerprint(habits, logs, today.isoformat()),
-        lambda: _validated(CoachOutput, ai_coach.get_coach_insight(username, habits, logs, today=today)),
+        lambda: _with_timestamp(_validated(CoachOutput, ai_coach.get_coach_insight(username, habits, logs, today=today))),
         daily_limit=config.AI_COACH_DAILY_LIMIT,
     )
 

@@ -46,7 +46,9 @@ def seed_completed_today(fake_db):
         {
             "id": "l1",
             "habit_id": "h1",
-            "date": date.today().isoformat(),
+            # The server's "today" without an X-Timezone header is the UTC date,
+            # which differs from the machine's local date for part of the day.
+            "date": deps.get_user_today(None).isoformat(),
             "status": "completed",
             "timestamp": "2026-01-01T00:00:00Z",
             "user_id": "user-1",

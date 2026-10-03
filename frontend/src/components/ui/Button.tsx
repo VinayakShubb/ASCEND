@@ -12,11 +12,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
 }
 
-/* Lane-white is the primary action (highest contrast on the night ground);
-   track red is reserved for brand moments and the landing page's main CTA. */
+/* Track red is the primary action everywhere (the app contract). Its text
+   measures 4.5:1 on track red and more on hover, which darkens rather than
+   brightens (a brighter red would drop below AA). `track` is an alias. */
 const variants: Record<Variant, string> = {
-  primary: 'bg-lane text-night-950 hover:bg-white',
-  track: 'bg-track text-track-ink hover:bg-track-bright',
+  primary: 'bg-track text-track-ink hover:bg-[#a23a24]',
+  track: 'bg-track text-track-ink hover:bg-[#a23a24]',
   secondary: 'bg-transparent text-lane border border-lane-line-strong hover:border-lane-dim hover:bg-night-800',
   ghost: 'bg-transparent text-lane-dim hover:text-lane hover:bg-night-800',
   danger: 'bg-transparent text-dnf border border-dnf/40 hover:bg-dnf/10 hover:border-dnf',

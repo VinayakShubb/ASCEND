@@ -91,7 +91,7 @@ function ScoreBoard({ analysis }: { analysis: CipherAnalysis }) {
                     GPU, where animating height would re-run layout every frame. */}
                 <motion.span
                   className="block h-full w-full origin-bottom rounded-t-[3px]"
-                  style={{ backgroundColor: d.isToday ? 'var(--color-lane-dim)' : statusColor }}
+                  style={{ backgroundColor: d.isToday ? 'var(--color-track)' : 'rgb(179 174 165 / 0.7)' }}
                   initial={reduce ? false : { scaleY: 0 }}
                   animate={{ scaleY: Math.max(4, d.score) / 100 }}
                   transition={{ duration: duration.slow, ease: ease.out, delay: 0.25 + i * 0.05 }}
