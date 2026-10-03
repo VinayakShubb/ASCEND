@@ -100,7 +100,7 @@ export function Hero({ onSeeScoring }: { onSeeScoring: () => void }) {
                 </div>
 
                 <div className="flex items-end justify-between gap-3">
-                  <BoardNumber value={SAMPLE_DI} pad={3} flipOnMount mountDelay={0.5} className="text-[84px] leading-none text-lane" />
+                  <BoardNumber value={SAMPLE_DI} pad={3} className="text-[84px] leading-none text-lane" />
                   <StatusTag status={status} className="mb-3" />
                 </div>
 
@@ -110,12 +110,9 @@ export function Hero({ onSeeScoring }: { onSeeScoring: () => void }) {
                     {DAILY_EXACT.map((score, i) => (
                       <li key={DAYS[i]} className="flex flex-col items-center gap-1.5">
                         <span className="relative flex h-16 w-full items-end overflow-hidden rounded-[3px] bg-night-800">
-                          <motion.span
-                            className="block w-full origin-bottom rounded-t-[3px] bg-[rgb(179_174_165/0.7)]"
-                            style={{ height: '100%' }}
-                            initial={reduce ? false : { scaleY: 0 }}
-                            animate={{ scaleY: Math.max(0.04, score / 100) }}
-                            transition={{ duration: duration.slow, ease: ease.out, delay: 0.6 + i * 0.05 }}
+                          <span
+                            className="block w-full rounded-t-[3px] bg-[rgb(179_174_165/0.7)]"
+                            style={{ height: `${Math.max(4, score)}%` }}
                           />
                         </span>
                         <span className={cn('text-[11px]', i === 6 ? 'font-semibold text-lane' : 'text-lane-mute')}>
