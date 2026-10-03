@@ -2,6 +2,7 @@ import { GearSix, SignOut } from '@phosphor-icons/react';
 import { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { CipherMark } from '../components/brand/CipherMark';
 import { Skeleton } from '../components/ui/Feedback';
 import { useAuth } from '../context/AuthContext';
 import { duration, ease } from '../design/motion';
@@ -118,6 +119,7 @@ export function AppShell() {
 
 function RailLink({ item }: { item: NavItem }) {
   const Icon = item.icon;
+  const isCipher = item.to === '/app/cipher';
   return (
     <NavLink
       to={item.to}
@@ -130,7 +132,11 @@ function RailLink({ item }: { item: NavItem }) {
     >
       {({ isActive }) => (
         <>
-          <Icon weight={isActive ? 'fill' : 'regular'} className={cn('size-5 shrink-0', isActive && 'text-track-bright')} />
+          {isCipher ? (
+            <CipherMark filled={isActive} className={cn('size-5 shrink-0', isActive && 'text-track-bright')} />
+          ) : (
+            <Icon weight={isActive ? 'fill' : 'regular'} className={cn('size-5 shrink-0', isActive && 'text-track-bright')} />
+          )}
           <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
             {item.label}
           </span>
@@ -155,7 +161,7 @@ function TabLink({ item }: { item: NavItem }) {
                 isActive ? 'bg-track text-track-ink shadow-[0_8px_24px_-6px_rgba(184,67,43,0.7)]' : 'bg-night-700 text-lane-dim',
               )}
             >
-              <Icon weight={isActive ? 'fill' : 'regular'} className="size-7" />
+              <CipherMark filled className="size-7" />
             </span>
             <span className={cn('mt-9 text-[11px] font-medium', isActive ? 'text-lane' : 'text-lane-mute')}>{item.label}</span>
           </>

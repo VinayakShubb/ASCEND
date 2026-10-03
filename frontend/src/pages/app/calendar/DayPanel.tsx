@@ -13,12 +13,14 @@ interface DayPanelProps {
   onChanged: () => void;
 }
 
-/* The selected day: its score, its completion, and its habits as lanes so a
-   past day can be corrected. Future days are shown but locked. */
+/* The selected day: its score, its completion, and its habits as lanes. Only
+   today can be checked off — past days are a locked record (no backfilling a
+   score after the fact) and future days have not arrived yet. */
 export function DayPanel({ day, todayStr, habits, onChanged }: DayPanelProps) {
   const { toggleHabitCompletion, getHabitStatus } = useData();
   const [pending, setPending] = useState<Set<string>>(() => new Set());
   const isFuture = day.kind === 'future';
+  const isToday = day.kind === 'today';
   const doneCount = habits.filter(h => getHabitStatus(h.id, day.date) === 'completed').length;
 
   const toggle = async (habitId: string) => {
@@ -37,9 +39,9 @@ export function DayPanel({ day, todayStr, habits, onChanged }: DayPanelProps) {
 
   const note = isFuture
     ? 'This day has not come yet. You can check habits off once it arrives.'
-    : day.kind === 'today'
+    : isToday
       ? 'This is today. Checking a habit here is the same as checking it on Today.'
-      : 'Tap a habit to correct this day. Scores update as soon as the change is saved.';
+      : 'This day is locked. Habits can only be checked off on the day itself, so your record stays honest.';
 
   return (
     <section aria-labelledby="day-panel-title">
@@ -85,7 +87,7 @@ export function DayPanel({ day, todayStr, habits, onChanged }: DayPanelProps) {
             difficulty={habit.difficulty}
             done={getHabitStatus(habit.id, day.date) === 'completed'}
             onToggle={() => void toggle(habit.id)}
-            disabled={isFuture || pending.has(habit.id)}
+            disabled={!isToday || pending.has(habit.id)}
             dayLabel={day.date === todayStr ? 'today' : `on ${format(parseISO(day.date), 'MMMM d')}`}
           />
         ))}

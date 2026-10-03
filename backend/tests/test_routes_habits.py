@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -5,6 +7,12 @@ import database
 import deps
 from main import app
 from tests.fakes import FakeSupabaseClient
+
+# Habits can only be toggled on the current day (plus one day of timezone
+# slack), so tests log against "today" rather than a fixed past date.
+TODAY = deps.get_user_today(None)
+TODAY_STR = TODAY.isoformat()
+TOMORROW_STR = (TODAY + timedelta(days=1)).isoformat()
 
 
 @pytest.fixture
@@ -98,12 +106,12 @@ def test_delete_habit(client, fake_db):
 def test_toggle_habit_completion_creates_then_removes_log(client, fake_db):
     seed_habit(fake_db)
 
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
     assert resp.json()["action"] == "completed"
     assert resp.json()["log"]["status"] == "completed"
     assert len(fake_db.tables["habit_logs"]) == 1
 
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
     assert resp.json()["action"] == "uncompleted"
     assert resp.json()["log"] is None
     assert len(fake_db.tables["habit_logs"]) == 0
@@ -111,8 +119,8 @@ def test_toggle_habit_completion_creates_then_removes_log(client, fake_db):
 
 def test_toggle_is_scoped_to_the_given_date(client, fake_db):
     seed_habit(fake_db)
-    client.post("/habits/h1/toggle", json={"date": "2026-08-15"})
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    client.post("/habits/h1/toggle", json={"date": TOMORROW_STR})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
     assert resp.json()["action"] == "completed"
     assert len(fake_db.tables["habit_logs"]) == 2
 
@@ -120,14 +128,14 @@ def test_toggle_is_scoped_to_the_given_date(client, fake_db):
 def test_cannot_toggle_another_users_habit(client, fake_db):
     seed_habit(fake_db, user_id="someone-else")
 
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
 
     assert resp.status_code == 404
     assert fake_db.tables["habit_logs"] == []
 
 
 def test_cannot_toggle_a_habit_that_does_not_exist(client, fake_db):
-    resp = client.post("/habits/missing/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/missing/toggle", json={"date": TODAY_STR})
 
     assert resp.status_code == 404
 
@@ -136,6 +144,16 @@ def test_toggle_rejects_dates_far_in_the_future(client, fake_db):
     seed_habit(fake_db)
 
     resp = client.post("/habits/h1/toggle", json={"date": "2999-01-01"})
+
+    assert resp.status_code == 422
+    assert fake_db.tables["habit_logs"] == []
+
+
+def test_toggle_rejects_past_dates(client, fake_db):
+    seed_habit(fake_db)
+
+    yesterday = (TODAY - timedelta(days=1)).isoformat()
+    resp = client.post("/habits/h1/toggle", json={"date": yesterday})
 
     assert resp.status_code == 422
     assert fake_db.tables["habit_logs"] == []
@@ -154,10 +172,10 @@ def test_toggle_off_removes_old_duplicate_logs_too(client, fake_db):
     seed_habit(fake_db)
     for log_id in ("l1", "l2"):
         fake_db.tables["habit_logs"].append(
-            {"id": log_id, "habit_id": "h1", "date": "2026-08-16", "status": "completed", "user_id": "user-1"}
+            {"id": log_id, "habit_id": "h1", "date": TODAY_STR, "status": "completed", "user_id": "user-1"}
         )
 
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
 
     assert resp.json()["action"] == "uncompleted"
     assert fake_db.tables["habit_logs"] == []
@@ -176,14 +194,14 @@ def test_toggle_double_tap_race_reports_completed(client, fake_db, monkeypatch):
             log_queries["n"] += 1
             if log_queries["n"] == 2:
                 fake_db.tables["habit_logs"].append(
-                    {"id": "other", "habit_id": "h1", "date": "2026-08-16", "status": "completed",
+                    {"id": "other", "habit_id": "h1", "date": TODAY_STR, "status": "completed",
                      "user_id": "user-1", "timestamp": "2026-08-16T10:00:00Z"}
                 )
         return query
 
     monkeypatch.setattr(fake_db, "table", table)
 
-    resp = client.post("/habits/h1/toggle", json={"date": "2026-08-16"})
+    resp = client.post("/habits/h1/toggle", json={"date": TODAY_STR})
 
     assert resp.status_code == 200
     assert resp.json()["action"] == "completed"

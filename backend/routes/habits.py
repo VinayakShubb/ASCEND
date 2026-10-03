@@ -93,10 +93,15 @@ def toggle_habit_completion(
     """
     user_id = current_user["id"]
 
-    # One day of slack covers clocks that are slightly off; anything further
-    # ahead is a bug or tampering, and would distort future scores.
-    if date.fromisoformat(body.date) > today + timedelta(days=1):
+    # A habit can only be checked off on the day itself. Backfilling a past day
+    # would let anyone inflate their Discipline Index after the fact, so past
+    # days are locked; one day of upper slack covers clocks/timezones that are
+    # slightly ahead.
+    log_date = date.fromisoformat(body.date)
+    if log_date > today + timedelta(days=1):
         raise HTTPException(status_code=422, detail="Cannot log a habit for a future date")
+    if log_date < today:
+        raise HTTPException(status_code=422, detail="You can only check a habit off on the day itself, not a past day")
 
     _require_own_habit(habit_id, user_id)
 
