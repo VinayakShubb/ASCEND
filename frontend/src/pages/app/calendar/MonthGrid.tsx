@@ -39,7 +39,7 @@ export function MonthGrid({ month, onMonthChange, days, windowStart, windowEnd, 
   const canNext = !isSameMonth(month, windowEnd) && month < windowEnd;
 
   return (
-    <div>
+    <div className="mx-auto max-w-[28rem]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-display text-[30px] uppercase" aria-live="polite">
           {format(month, 'MMMM yyyy')}

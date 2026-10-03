@@ -2,15 +2,23 @@ import { GearSix, SignOut } from '@phosphor-icons/react';
 import { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { Logo } from '../components/brand/Logo';
 import { Skeleton } from '../components/ui/Feedback';
 import { useAuth } from '../context/AuthContext';
 import { duration, ease } from '../design/motion';
 import { cn } from '../lib/cn';
 import { NAV, type NavItem } from '../design/nav';
 
-/* Desktop: a left rail. Phones: a top bar (logo, settings) and a bottom tab
-   bar within thumb reach. Pages cross-fade on route change. */
+/* CIPHER sits in the middle of the phone tab bar — it's the hero surface and
+   the most thumb-reachable slot. The rail keeps the plain reading order. */
+const MOBILE_NAV: NavItem[] = (() => {
+  const rest = NAV.filter(n => n.to !== '/app/cipher');
+  const cipher = NAV.find(n => n.to === '/app/cipher')!;
+  return [rest[0], rest[1], cipher, rest[2], rest[3]];
+})();
+
+/* Desktop: a slim glass rail that expands to labels on hover or keyboard
+   focus, floating over the page so content never shifts. Phones: a glass top
+   bar (centered wordmark) and a glass bottom tab bar with a raised CIPHER. */
 export function AppShell() {
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -25,44 +33,60 @@ export function AppShell() {
     <div className="relative min-h-dvh">
       <div className="stadium-ground" aria-hidden />
 
-      {/* Desktop rail */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-lane-line bg-night-950/70 px-4 pb-5 pt-6 backdrop-blur-sm lg:flex">
-        <NavLink to="/app/today" className="mb-10 px-3" aria-label="ASCEND home">
-          <Logo />
+      {/* Desktop rail — 72px collapsed, 248px on hover/focus */}
+      <aside
+        className={cn(
+          'group fixed inset-y-0 left-0 z-40 hidden w-[72px] flex-col overflow-hidden lg:flex',
+          'border-r border-lane-line bg-night-900/60 px-3 pb-5 pt-6 backdrop-blur-xl',
+          'shadow-[8px_0_32px_-24px_rgba(0,0,0,0.9)] transition-[width] duration-300 ease-out',
+          'hover:w-[248px] focus-within:w-[248px]',
+        )}
+      >
+        <NavLink to="/app/today" className="mb-9 flex h-9 items-center gap-2.5 px-2" aria-label="ASCEND home">
+          <img src="/image.png" alt="" width={32} height={32} className="size-8 shrink-0 object-contain" />
+          <span className="whitespace-nowrap font-display text-[22px] uppercase leading-none tracking-[0.04em] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+            Ascend
+          </span>
         </NavLink>
         <nav aria-label="Main" className="flex flex-col gap-1">
           {[...NAV, { to: '/app/settings', label: 'Settings', icon: GearSix }].map(item => (
             <RailLink key={item.to} item={item} />
           ))}
         </nav>
-        <div className="mt-auto border-t border-lane-line px-3 pt-4">
-          <p className="truncate text-[14px] font-semibold">{user?.username}</p>
+        <div className="mt-auto border-t border-lane-line px-2 pt-4">
+          <p className="truncate text-[14px] font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+            {user?.username}
+          </p>
           <button
             onClick={handleLogout}
-            className="mt-2 inline-flex min-h-9 items-center gap-2 text-[13px] text-lane-mute transition-colors hover:text-lane"
+            className="mt-2 inline-flex min-h-9 items-center gap-3 text-[13px] text-lane-mute transition-colors hover:text-lane"
           >
-            <SignOut className="size-4" /> Log out
+            <SignOut className="size-5 shrink-0" />
+            <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+              Log out
+            </span>
           </button>
         </div>
       </aside>
 
       {/* Phone top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-lane-line bg-night-950/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
-        <NavLink to="/app/today" aria-label="ASCEND home">
-          <Logo />
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-center border-b border-lane-line bg-night-900/60 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
+        <NavLink to="/app/today" aria-label="ASCEND home" className="flex items-center gap-2.5">
+          <img src="/image.png" alt="" width={28} height={28} className="size-7 object-contain" />
+          <span className="font-display text-[20px] uppercase leading-none tracking-[0.05em]">Ascend</span>
         </NavLink>
         <NavLink
           to="/app/settings"
           aria-label="Settings"
           className={({ isActive }) =>
-            cn('-mr-2 grid size-11 place-items-center rounded-full transition-colors', isActive ? 'text-lane' : 'text-lane-dim')
+            cn('absolute right-2 grid size-11 place-items-center rounded-full transition-colors', isActive ? 'text-lane' : 'text-lane-dim')
           }
         >
           <GearSix className="size-6" />
         </NavLink>
       </header>
 
-      <div className="relative z-10 lg:pl-[248px]">
+      <div className="relative z-10 lg:pl-[72px]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.main
             key={location.pathname}
@@ -79,12 +103,12 @@ export function AppShell() {
         </AnimatePresence>
       </div>
 
-      {/* Phone tab bar */}
+      {/* Phone tab bar — CIPHER raised in the centre */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-lane-line bg-night-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-lane-line bg-night-900/65 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        {NAV.map(item => (
+        {MOBILE_NAV.map(item => (
           <TabLink key={item.to} item={item} />
         ))}
       </nav>
@@ -99,15 +123,17 @@ function RailLink({ item }: { item: NavItem }) {
       to={item.to}
       className={({ isActive }) =>
         cn(
-          'group flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors duration-200',
+          'flex h-11 items-center gap-3 rounded-xl px-[14px] text-[15px] font-medium transition-colors duration-200',
           isActive ? 'bg-night-800 text-lane' : 'text-lane-dim hover:bg-night-850 hover:text-lane',
         )
       }
     >
       {({ isActive }) => (
         <>
-          <Icon weight={isActive ? 'fill' : 'regular'} className={cn('size-5', isActive ? 'text-track-bright' : '')} />
-          {item.label}
+          <Icon weight={isActive ? 'fill' : 'regular'} className={cn('size-5 shrink-0', isActive && 'text-track-bright')} />
+          <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+            {item.label}
+          </span>
         </>
       )}
     </NavLink>
@@ -116,6 +142,28 @@ function RailLink({ item }: { item: NavItem }) {
 
 function TabLink({ item }: { item: NavItem }) {
   const Icon = item.icon;
+  const isCipher = item.to === '/app/cipher';
+
+  if (isCipher) {
+    return (
+      <NavLink to={item.to} className="relative flex min-h-[60px] flex-col items-center justify-end gap-1 pb-1.5">
+        {({ isActive }) => (
+          <>
+            <span
+              className={cn(
+                'absolute -top-5 grid size-14 place-items-center rounded-full ring-4 ring-night-950 transition-colors',
+                isActive ? 'bg-track text-track-ink shadow-[0_8px_24px_-6px_rgba(184,67,43,0.7)]' : 'bg-night-700 text-lane-dim',
+              )}
+            >
+              <Icon weight={isActive ? 'fill' : 'regular'} className="size-7" />
+            </span>
+            <span className={cn('mt-9 text-[11px] font-medium', isActive ? 'text-lane' : 'text-lane-mute')}>{item.label}</span>
+          </>
+        )}
+      </NavLink>
+    );
+  }
+
   return (
     <NavLink to={item.to} className="relative flex min-h-[60px] flex-col items-center justify-center gap-1">
       {({ isActive }) => (

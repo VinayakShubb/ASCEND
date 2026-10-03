@@ -96,10 +96,10 @@ export function CalendarPage() {
       ) : (
         <>
           <section aria-label="Season record" className={range.refreshing ? 'opacity-90 transition-opacity' : 'transition-opacity'}>
-            <div className="hidden md:block">
+            <div className="hidden sm:block">
               <YearHeatmap days={days} selected={selectedDay.date} onSelect={select} />
             </div>
-            <div className="md:hidden">
+            <div className="sm:hidden">
               <MonthGrid
                 month={month}
                 onMonthChange={setMonth}
@@ -138,8 +138,8 @@ export function CalendarPage() {
 function CalendarSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading your calendar">
-      <Skeleton className="hidden h-[190px] w-full md:block" />
-      <div className="md:hidden">
+      <Skeleton className="hidden h-[190px] w-full sm:block" />
+      <div className="mx-auto max-w-[28rem] sm:hidden">
         <Skeleton className="mb-4 h-9 w-48" />
         <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: 35 }, (_, i) => (
