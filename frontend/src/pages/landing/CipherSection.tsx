@@ -1,5 +1,6 @@
 import { CipherAvatar } from '../../components/brand/CipherAvatar';
 import { CIPHER_SAMPLE, SAMPLE_HABITS } from './sampleWeek';
+import { Reveal } from './Reveal';
 
 const POINTS = [
   'Every number is computed from your check-offs — never guessed.',
@@ -14,7 +15,7 @@ export function CipherSection() {
   return (
     <section aria-labelledby="cipher-title" className="relative pb-28 pt-28 md:pb-36 md:pt-40">
       <div className="mx-auto grid max-w-[1400px] gap-12 px-4 sm:px-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-20">
-        <div className="flex flex-col items-start lg:pt-6">
+        <Reveal className="flex flex-col items-start lg:pt-6">
           <CipherAvatar mood="solid" size="lg" />
           <h2 id="cipher-title" className="font-display mt-7 text-[clamp(2.25rem,6vw,4rem)] uppercase">
             CIPHER reads the sheet.
@@ -30,12 +31,14 @@ export function CipherSection() {
               </li>
             ))}
           </ul>
-        </div>
+        </Reveal>
 
-        <article
-          aria-label="Sample CIPHER result sheet"
+        <Reveal
+          delay={0.1}
+          as="div"
           className="relative rounded-[4px] bg-lane px-5 py-7 text-night-950 shadow-[0_40px_80px_-40px_rgb(0_0_0/0.9)] sm:px-10 sm:py-10 lg:-rotate-[0.6deg]"
         >
+          <article aria-label="Sample CIPHER result sheet">
           <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-night-950 pb-5">
             <div>
               <h3 className="font-display text-[30px] uppercase leading-none sm:text-[38px]">Result sheet</h3>
@@ -64,7 +67,8 @@ export function CipherSection() {
             </p>
             <p className="text-[13px] text-night-700">Coach note, written by CIPHER. The figures above are calculated, never generated.</p>
           </div>
-        </article>
+          </article>
+        </Reveal>
       </div>
     </section>
   );

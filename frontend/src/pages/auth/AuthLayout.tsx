@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '../../components/brand/Logo';
-import { TrackField } from './TrackField';
+import { AuthShowcase } from './AuthShowcase';
 
-/* Sign-in pages: the form stands on the night ground at the edge of the
-   track. Phones: logo, form, then a strip of track underfoot. Laptops: the
-   form column on the left, the track filling the right side. */
+/* Sign-in pages: the form stands on the night ground, with a product preview
+   alongside. Phones: logo, form, then the preview underfoot. Laptops: the
+   form column on the left, the preview filling the right side. */
 export function AuthLayout({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)]">
@@ -25,7 +25,7 @@ export function AuthLayout({ title, intro, children }: { title: string; intro: s
         </main>
       </div>
 
-      <TrackField className="relative z-10 min-h-[148px] flex-1 lg:sticky lg:top-0 lg:h-dvh lg:self-start" />
+      <AuthShowcase className="relative z-10 min-h-[260px] flex-1 lg:sticky lg:top-0 lg:h-dvh lg:self-start" />
     </div>
   );
 }

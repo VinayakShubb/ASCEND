@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LaneRow } from '../../components/app/LaneRow';
+import { Reveal } from './Reveal';
 import { BoardNumber, ResultsBoard } from '../../components/brand/Scoreboard';
 import { StatusTag } from '../../components/brand/StatusTag';
 import { statusFromIndex } from '../../design/status';
@@ -26,7 +27,7 @@ export function TryItSection() {
   return (
     <section aria-labelledby="try-title" className="relative pb-24 pt-28 md:pb-32 md:pt-40">
       <div className="mx-auto grid max-w-[1400px] gap-8 px-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-x-16 lg:gap-y-10">
-        <div className="lg:col-start-1 lg:row-start-1">
+        <Reveal className="lg:col-start-1 lg:row-start-1">
           <h2 id="try-title" className="font-display text-[clamp(2.25rem,6vw,4rem)] uppercase">
             Your turn. Run Sunday.
           </h2>
@@ -34,7 +35,7 @@ export function TryItSection() {
             These are the lanes from the app. Monday to Saturday of the sample week are already scored; tap a habit to finish it
             and watch the board.
           </p>
-        </div>
+        </Reveal>
 
         <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-6">
           <ResultsBoard className="lg:sticky lg:top-8">
@@ -78,19 +79,21 @@ export function TryItSection() {
           </ResultsBoard>
         </div>
 
-        <div className="border-t border-lane-line lg:col-start-1 lg:row-start-2" role="group" aria-label="Sample habits for Sunday">
-          {SAMPLE_HABITS.map((h, i) => (
-            <LaneRow
-              key={h.id}
-              lane={i + 1}
-              name={h.name}
-              difficulty={h.difficulty}
-              done={done[i]}
-              streak={streakOn(h.week, SUNDAY, done[i])}
-              onToggle={() => toggle(i)}
-            />
-          ))}
-        </div>
+        <Reveal delay={0.1} className="lg:col-start-1 lg:row-start-2">
+          <div className="border-t border-lane-line" role="group" aria-label="Sample habits for Sunday">
+            {SAMPLE_HABITS.map((h, i) => (
+              <LaneRow
+                key={h.id}
+                lane={i + 1}
+                name={h.name}
+                difficulty={h.difficulty}
+                done={done[i]}
+                streak={streakOn(h.week, SUNDAY, done[i])}
+                onToggle={() => toggle(i)}
+              />
+            ))}
+          </div>
+        </Reveal>
       </div>
     </section>
   );

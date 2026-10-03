@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ArrowRight } from '@phosphor-icons/react';
 import { DIFFICULTY_OPTIONS, WEIGHT_VALUE } from '../../design/habits';
+import { Reveal } from './Reveal';
 
 /* How the score works: the rule book, in the meet's vocabulary. The weight
    strip is drawn to scale, so 2.0x is visibly twice 1.0x. */
@@ -16,29 +17,34 @@ export function ScoringSection() {
   return (
     <section aria-labelledby="rules-title" className="relative border-t border-lane-line pb-24 pt-28 md:pb-32 md:pt-36">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-        <h2 id="rules-title" className="font-display max-w-[18ch] text-[clamp(2.25rem,6vw,4rem)] uppercase">
-          How a day becomes a number.
-        </h2>
-        <p className="mt-4 max-w-[60ch] text-[16px] text-lane-dim sm:text-[17px]">
-          Every habit gets a difficulty when you add it. That weight decides how much of the day it is worth.
-        </p>
+        <Reveal>
+          <h2 id="rules-title" className="font-display max-w-[18ch] text-[clamp(2.25rem,6vw,4rem)] uppercase">
+            How a day becomes a number.
+          </h2>
+          <p className="mt-4 max-w-[60ch] text-[16px] text-lane-dim sm:text-[17px]">
+            Every habit gets a difficulty when you add it. That weight decides how much of the day it is worth.
+          </p>
+        </Reveal>
 
         {/* Weights, drawn to scale. */}
-        <div className="mt-12 flex flex-col gap-1.5 sm:flex-row sm:gap-2" role="list" aria-label="Difficulty weights">
-          {DIFFICULTY_OPTIONS.map((d) => (
-            <div
-              key={d.value}
-              role="listitem"
-              style={{ '--w': WEIGHT_VALUE[d.value] } as CSSProperties}
-              className="tartan flex w-[calc(var(--w)*50%)] min-w-0 items-end justify-between gap-3 rounded-[6px] px-3 py-2.5 sm:w-auto sm:grow-[var(--w)] sm:basis-0 sm:flex-col sm:items-stretch sm:gap-6 sm:px-5 sm:py-4"
-            >
-              <span className="truncate text-[13px] font-semibold text-track-ink sm:text-[14px]">{d.label}</span>
-              <span className="font-display tabular text-[30px] leading-none text-lane sm:text-[clamp(2rem,4.5vw,3.5rem)]">{d.detail}</span>
-            </div>
-          ))}
-        </div>
+        <Reveal delay={0.08} className="mt-12">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2" role="list" aria-label="Difficulty weights">
+            {DIFFICULTY_OPTIONS.map((d) => (
+              <div
+                key={d.value}
+                role="listitem"
+                style={{ '--w': WEIGHT_VALUE[d.value] } as CSSProperties}
+                className="tartan flex w-[calc(var(--w)*50%)] min-w-0 items-end justify-between gap-3 rounded-[6px] px-3 py-2.5 sm:w-auto sm:grow-[var(--w)] sm:basis-0 sm:flex-col sm:items-stretch sm:gap-6 sm:px-5 sm:py-4"
+              >
+                <span className="truncate text-[13px] font-semibold text-track-ink sm:text-[14px]">{d.label}</span>
+                <span className="font-display tabular text-[30px] leading-none text-lane sm:text-[clamp(2rem,4.5vw,3.5rem)]">{d.detail}</span>
+              </div>
+            ))}
+          </div>
+        </Reveal>
 
-        <dl className="mt-16 border-t border-lane-line">
+        <Reveal delay={0.12} as="div">
+          <dl className="mt-16 border-t border-lane-line">
           <Rule term="Daily score">
             <p>
               The weights of the habits you finished, divided by the weights of all your habits, times 100. Finish Gym (1.5) and Read
@@ -69,15 +75,18 @@ export function ScoringSection() {
               </ul>
             </div>
           </Rule>
-        </dl>
+          </dl>
+        </Reveal>
 
-        <Link
-          to="/how-it-works"
-          className="mt-10 inline-flex h-11 items-center gap-2 text-[15px] font-semibold text-lane underline decoration-lane-line-strong underline-offset-[6px] transition-colors hover:decoration-lane"
-        >
-          Read the full rules
-          <ArrowRight weight="bold" className="size-4" aria-hidden />
-        </Link>
+        <Reveal delay={0.08}>
+          <Link
+            to="/how-it-works"
+            className="mt-10 inline-flex h-11 items-center gap-2 text-[15px] font-semibold text-lane underline decoration-lane-line-strong underline-offset-[6px] transition-colors hover:decoration-lane"
+          >
+            Read the full rules
+            <ArrowRight weight="bold" className="size-4" aria-hidden />
+          </Link>
+        </Reveal>
       </div>
     </section>
   );
