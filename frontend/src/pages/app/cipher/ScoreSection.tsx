@@ -7,11 +7,22 @@ import { STATUS_META } from '../../../design/status';
 import type { CipherAnalysis } from '../../../lib/api';
 import { cn } from '../../../lib/cn';
 
+/* The strict verdict for each band: status word plus a blunt statement of
+   where you stand. Computed from the status, never the AI, so it can never
+   contradict the number on the board. */
+const VERDICT: Record<CipherAnalysis['status'], { tag: string; line: string }> = {
+  elite: { tag: 'holding the standard', line: "You're at the top. Hold it." },
+  solid: { tag: 'room to climb', line: 'Holding steady — not peaking yet.' },
+  slipping: { tag: 'losing ground', line: "You're slipping. Reverse it this week." },
+  critical: { tag: 'act today', line: 'This is critical. Act today.' },
+};
+
 /* The score: the Discipline Index on the results board with the last 7 daily
-   scores, CIPHER's headline and verdict beside it, then the three baselines. */
+   scores, the strict verdict and CIPHER's note beside it, then the baselines. */
 export function ScoreSection({ analysis }: { analysis: CipherAnalysis }) {
   const { score } = analysis;
   const momentumUp = score.momentum >= 0;
+  const verdict = VERDICT[analysis.status];
 
   return (
     <section aria-labelledby="cipher-score">
@@ -19,13 +30,21 @@ export function ScoreSection({ analysis }: { analysis: CipherAnalysis }) {
         <ScoreBoard analysis={analysis} />
 
         <div className="min-w-0 lg:pt-2">
-          <h2 id="cipher-score" className="font-display text-[38px] uppercase sm:text-[52px]">
-            {analysis.headline}
+          <p className={cn('text-[13px] font-semibold uppercase tracking-[0.18em]', STATUS_META[analysis.status].text)}>
+            {STATUS_META[analysis.status].label} · {verdict.tag}
+          </p>
+          <h2 id="cipher-score" className="mt-3 font-display text-[38px] uppercase sm:text-[52px]">
+            {verdict.line}
           </h2>
-          <p className="mt-4 max-w-[62ch] text-[17px] leading-relaxed text-lane">{analysis.verdict}</p>
           <p className="mt-5 max-w-[66ch] border-t border-lane-line pt-4 text-[14px] text-lane-dim">
             <strong className="font-semibold text-lane">Discipline Index {score.value}:</strong> {score.explain.value}
           </p>
+          {analysis.verdict && (
+            <p className="mt-5 max-w-[62ch] border-l-2 border-track pl-4 text-[16px] leading-relaxed text-lane">
+              {analysis.verdict}
+              <span className="mt-1 block text-[12px] uppercase tracking-[0.12em] text-lane-mute">CIPHER's read</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -62,7 +81,6 @@ function Baseline({ label, value, explain }: { label: string; value: ReactNode; 
 
 function ScoreBoard({ analysis }: { analysis: CipherAnalysis }) {
   const reduce = useReducedMotion();
-  const statusColor = STATUS_META[analysis.status].color;
 
   return (
     <ResultsBoard className="p-5 sm:p-6">

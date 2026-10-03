@@ -1,6 +1,12 @@
 import { CipherAvatar } from '../../components/brand/CipherAvatar';
 import { CIPHER_SAMPLE, SAMPLE_HABITS } from './sampleWeek';
 
+const POINTS = [
+  'Every number is computed from your check-offs — never guessed.',
+  'It names what moved your index, and the one move that lifts it.',
+  'Honest, not hype: it calls the problem and the fix, plainly.',
+];
+
 /* CIPHER, the analyst: an official result sheet in lane white on the night
    ground. The lines are computed from the sample week with the backend's
    rules; only the coach note is the kind of text the AI writes. */
@@ -8,17 +14,22 @@ export function CipherSection() {
   return (
     <section aria-labelledby="cipher-title" className="relative pb-28 pt-28 md:pb-36 md:pt-40">
       <div className="mx-auto grid max-w-[1400px] gap-12 px-4 sm:px-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-20">
-        <div className="flex flex-col items-start lg:pt-10">
-          <div className="origin-bottom-left scale-150 pt-8">
-            <CipherAvatar mood="solid" size="lg" />
-          </div>
-          <h2 id="cipher-title" className="font-display mt-6 text-[clamp(2.25rem,6vw,4rem)] uppercase">
+        <div className="flex flex-col items-start lg:pt-6">
+          <CipherAvatar mood="solid" size="lg" />
+          <h2 id="cipher-title" className="font-display mt-7 text-[clamp(2.25rem,6vw,4rem)] uppercase">
             CIPHER reads the sheet.
           </h2>
           <p className="mt-4 max-w-[46ch] text-[16px] leading-relaxed text-lane-dim sm:text-[17px]">
-            Your analyst. Every number is computed from your check-offs; CIPHER explains what moved your index and what moves it next,
-            like an honest coach.
+            Your analyst. It reads the same figures you see and tells you what they mean — like an honest coach, not a chatbot.
           </p>
+          <ul className="mt-7 flex flex-col gap-3.5 border-t border-lane-line pt-6">
+            {POINTS.map((point) => (
+              <li key={point} className="flex items-start gap-3 text-[15px] leading-snug text-lane">
+                <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-track-bright" />
+                {point}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <article
