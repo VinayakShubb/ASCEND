@@ -72,6 +72,15 @@ function GuestOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/* The landing page is the marketing site for signed-out visitors. Once you're
+   logged in, the home of the product is the app, so "/" goes straight there. */
+function Landing() {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <SplashScreen />;
+  if (isAuthenticated) return <Navigate to="/app/today" replace />;
+  return <LandingPage />;
+}
+
 export default function App() {
   return (
     <MotionConfig reducedMotion="user">
@@ -80,7 +89,7 @@ export default function App() {
         <AfterOAuthRedirect />
         <Suspense fallback={<SplashScreen />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
           <Route path="/signup" element={<GuestOnly><SignupPage /></GuestOnly>} />
