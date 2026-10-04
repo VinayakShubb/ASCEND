@@ -37,7 +37,8 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest ships the Android SDK (ANDROID_HOME set, licenses
+      # accepted); Gradle downloads any missing build-tools itself.
 
       - name: Sync Capacitor
         run: npx cap sync android
