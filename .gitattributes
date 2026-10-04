@@ -1,0 +1,5 @@
+# Shell scripts must stay LF so they run on Linux CI (the Gradle wrapper that
+# builds the APK is invoked as a shell script).
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
