@@ -32,9 +32,16 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 # Where Google OAuth should send the browser back to after login.
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# The Capacitor Android/iOS app serves its web layer from a localhost origin,
+# so the API has to allow it the same way it allows the website.
+NATIVE_APP_ORIGINS = ["https://localhost", "http://localhost", "capacitor://localhost"]
+
 # Every origin allowed to call the API from a browser: FRONTEND_URL plus any
-# extras (custom domain, a second Vercel domain) in FRONTEND_URLS.
-ALLOWED_ORIGINS: list[str] = list(dict.fromkeys([FRONTEND_URL, *_split_list(os.environ.get("FRONTEND_URLS", ""))]))
+# extras (custom domain, a second Vercel domain) in FRONTEND_URLS, plus the
+# native app.
+ALLOWED_ORIGINS: list[str] = list(
+    dict.fromkeys([FRONTEND_URL, *_split_list(os.environ.get("FRONTEND_URLS", "")), *NATIVE_APP_ORIGINS])
+)
 
 # Optional: crash/error reporting. Leave unset locally and in tests.
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
