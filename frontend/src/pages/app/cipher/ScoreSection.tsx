@@ -7,22 +7,28 @@ import { STATUS_META } from '../../../design/status';
 import type { CipherAnalysis } from '../../../lib/api';
 import { cn } from '../../../lib/cn';
 
-/* The strict verdict for each band: status word plus a blunt statement of
-   where you stand. Computed from the status, never the AI, so it can never
+/* CIPHER has a temperament, not just a threshold: delighted when you're
+   flying, steady when you're holding, uneasy when you slip, and urgent when
+   it's bad. Computed from the status, never the AI, so the feeling can never
    contradict the number on the board. */
 const VERDICT: Record<CipherAnalysis['status'], { tag: string; line: string }> = {
-  elite: { tag: 'holding the standard', line: "You're at the top. Hold it." },
-  solid: { tag: 'room to climb', line: 'Holding steady — not peaking yet.' },
-  slipping: { tag: 'losing ground', line: "You're slipping. Reverse it this week." },
-  critical: { tag: 'act today', line: 'This is critical. Act today.' },
+  elite: { tag: 'this is your best work', line: "You're flying. Protect this." },
+  solid: { tag: 'steady, and it shows', line: "You're holding the line." },
+  slipping: { tag: 'this one worries me', line: "You're slipping. Let's stop the slide." },
+  critical: { tag: 'I want you back', line: 'This is critical. One move, right now.' },
 };
+
+/* The first days are not a performance to judge, so CIPHER just sounds glad
+   you're here. */
+const WELCOME = { tag: 'just getting started', line: "Good to have you here. Let's build the first days." };
 
 /* The score: the Discipline Index on the results board with the last 7 daily
    scores, the strict verdict and CIPHER's note beside it, then the baselines. */
 export function ScoreSection({ analysis }: { analysis: CipherAnalysis }) {
   const { score } = analysis;
   const momentumUp = score.momentum >= 0;
-  const verdict = VERDICT[analysis.status];
+  const starting = analysis.isNewUser;
+  const verdict = starting ? WELCOME : VERDICT[analysis.status];
 
   return (
     <section aria-labelledby="cipher-score">
@@ -30,8 +36,13 @@ export function ScoreSection({ analysis }: { analysis: CipherAnalysis }) {
         <ScoreBoard analysis={analysis} />
 
         <div className="min-w-0 lg:pt-2">
-          <p className={cn('text-[13px] font-semibold uppercase tracking-[0.18em]', STATUS_META[analysis.status].text)}>
-            {STATUS_META[analysis.status].label} · {verdict.tag}
+          <p
+            className={cn(
+              'text-[13px] font-semibold uppercase tracking-[0.18em]',
+              starting ? 'text-[#f7dfa5]' : STATUS_META[analysis.status].text,
+            )}
+          >
+            {starting ? `Day ${analysis.daysTracked}` : STATUS_META[analysis.status].label} · {verdict.tag}
           </p>
           <h2 id="cipher-score" className="mt-3 font-display text-[38px] uppercase sm:text-[52px]">
             {verdict.line}

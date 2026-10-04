@@ -12,6 +12,8 @@
 .cipher-orb[data-mood="solid"]     { --m:#4fa36b; --ring:#3f8c5c; --arc:212; }
 .cipher-orb[data-mood="slipping"]  { --m:#e2a23b; --ring:#e2a23b; --arc:114; }
 .cipher-orb[data-mood="critical"]  { --m:#e05a43; --ring:#e05a43; --arc:39; }
+/* The first days: warm floodlight gold, nothing to judge yet. */
+.cipher-orb[data-mood="welcome"]   { --m:#f7dfa5; --ring:#c9a86a; --arc:60; }
 
 .cipher-orb .orb-svg { width:100%; height:100%; overflow:visible; animation:co-bob 4.6s ease-in-out infinite; }
 
@@ -91,6 +93,18 @@
 .cipher-orb[data-mood="critical"] .iris  { animation:co-irispulse .72s ease-in-out infinite; }
 .cipher-orb[data-mood="critical"] .orb-svg{ animation:co-shake .5s ease-in-out infinite; }
 .cipher-orb[data-mood="critical"] .bezel { animation-duration:14s; }
+
+/* welcome -- delighted to see you: beaming, sparkling, lightest on its feet */
+.cipher-orb[data-mood="welcome"] .eye   { opacity:0; }
+.cipher-orb[data-mood="welcome"] .heye  { opacity:1; }
+.cipher-orb[data-mood="welcome"] .mouth { transform:scaleY(1.05); }
+.cipher-orb[data-mood="welcome"] .cheek { opacity:.38; }
+.cipher-orb[data-mood="welcome"] .orb-svg{ animation:co-bobHappy 2.3s ease-in-out infinite; }
+.cipher-orb[data-mood="welcome"] .halo  { animation-duration:3.2s; }
+.cipher-orb[data-mood="welcome"] .bezel { animation-duration:14s; }
+.cipher-orb[data-mood="welcome"] .spark { animation:co-twinkle 1.9s ease-in-out infinite; }
+.cipher-orb[data-mood="welcome"] .spark.s2{ animation-delay:.45s; }
+.cipher-orb[data-mood="welcome"] .spark.s3{ animation-delay:.9s; }
 
 @keyframes co-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes co-bobHappy{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}

@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import './cipherAvatar.css';
 
-export type CipherMood = 'elite' | 'solid' | 'slipping' | 'critical' | 'analyzing' | 'idle';
+export type CipherMood = 'elite' | 'solid' | 'slipping' | 'critical' | 'analyzing' | 'idle' | 'welcome';
 export type AvatarSize = 'sm' | 'md' | 'lg';
 
 export interface CipherAvatarProps {
@@ -15,7 +15,7 @@ export interface CipherAvatarProps {
 }
 
 const SIZES: Record<AvatarSize, number> = { sm: 40, md: 56, lg: 100 };
-const CYCLE: CipherMood[] = ['idle', 'analyzing', 'solid', 'slipping', 'elite', 'critical'];
+const CYCLE: CipherMood[] = ['welcome', 'analyzing', 'solid', 'slipping', 'elite', 'critical'];
 
 /* A glass "analyst core": a floating sphere with expressive LED eyes inside a
    HUD instrument — a rotating tick-bezel, targeting brackets, and a data arc

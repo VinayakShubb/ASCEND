@@ -7,6 +7,7 @@ import { Skeleton } from '../../../components/ui/Feedback';
 import { STATUS_META } from '../../../design/status';
 import { cn } from '../../../lib/cn';
 import type { Habit, HabitLog } from '../../../types';
+import { useTrackingStart } from '../../../hooks/useTrackingStart';
 import { useCoachLine, useWeekStats } from './useTodayData';
 
 interface CoachRailProps {
@@ -21,6 +22,10 @@ interface CoachRailProps {
 export function CoachRail({ habits, logs, streaks }: CoachRailProps) {
   // Re-ask CIPHER for its note whenever the habits or today's check-offs
   // change, so it never keeps insisting on something you have just done.
+  // The first three days are an introduction, not an assessment.
+  const trackingStart = useTrackingStart();
+  const starting = differenceInCalendarDays(new Date(), trackingStart) + 1 <= 3;
+
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const signature = useMemo(() => {
     const done = logs
@@ -35,7 +40,7 @@ export function CoachRail({ habits, logs, streaks }: CoachRailProps) {
     <aside aria-label="Coach" className="grid gap-x-10 md:grid-cols-2 xl:grid-cols-1">
       <WeekStrip habits={habits} streaks={streaks} />
       <NeedsAttention habits={habits} logs={logs} />
-      <CoachLine enabled={habits.length > 0} signature={signature} />
+      <CoachLine enabled={habits.length > 0} signature={signature} starting={starting} />
     </aside>
   );
 }
@@ -155,7 +160,7 @@ function NeedsAttention({ habits, logs }: { habits: Habit[]; logs: HabitLog[] })
   );
 }
 
-function CoachLine({ enabled, signature }: { enabled: boolean; signature: string }) {
+function CoachLine({ enabled, signature, starting }: { enabled: boolean; signature: string; starting: boolean }) {
   const coach = useCoachLine(enabled, signature);
 
   return (
@@ -170,9 +175,16 @@ function CoachLine({ enabled, signature }: { enabled: boolean; signature: string
       ) : coach.state === 'ready' ? (
         <div>
           <div className="flex items-start gap-3">
-            <CipherAvatar mood={coach.value.status} size="sm" className="mt-0.5 shrink-0" />
+            <CipherAvatar mood={starting ? 'welcome' : coach.value.status} size="sm" className="mt-0.5 shrink-0" />
             <div className="min-w-0">
-              <p className={cn('text-[12px] font-semibold', STATUS_META[coach.value.status].text)}>CIPHER, {STATUS_META[coach.value.status].label.toLowerCase()}</p>
+              <p
+                className={cn(
+                  'text-[12px] font-semibold',
+                  starting ? 'text-[#f7dfa5]' : STATUS_META[coach.value.status].text,
+                )}
+              >
+                {starting ? "CIPHER, glad you're here" : `CIPHER, ${STATUS_META[coach.value.status].label.toLowerCase()}`}
+              </p>
               <p className="mt-0.5 text-[15px] font-semibold leading-snug text-lane">{coach.value.headline}</p>
             </div>
           </div>
@@ -187,7 +199,7 @@ function CoachLine({ enabled, signature }: { enabled: boolean; signature: string
         </div>
       ) : (
         <div className="flex items-start gap-3">
-          <CipherAvatar mood="idle" size="sm" className="mt-0.5 shrink-0" />
+          <CipherAvatar mood={starting ? 'welcome' : 'idle'} size="sm" className="mt-0.5 shrink-0" />
           <p className="text-[14px] leading-relaxed text-lane-dim">
             {enabled
               ? 'No note from CIPHER yet today. Keep checking off habits; the coach writes one line a day once there is history to read.'

@@ -94,7 +94,8 @@ export function CipherPage() {
   if (!user) return null;
 
   const loading = latest === 'loading' || habitsLoading;
-  const mood = running ? 'analyzing' : analysis ? analysis.status : 'idle';
+  // The first days get the welcoming face rather than a verdict face.
+  const mood = running ? 'analyzing' : analysis ? (analysis.isNewUser ? 'welcome' : analysis.status) : 'idle';
 
   let body: ReactNode;
   if (loading) {
@@ -157,8 +158,8 @@ export function CipherPage() {
           <p className="flex items-start gap-2.5 border-y border-lane-line py-3.5 text-[14px] text-lane">
             <Info weight="bold" className="mt-0.5 size-4 shrink-0 text-lane-dim" aria-hidden />
             <span>
-              Day <span className="tabular">{analysis.daysTracked}</span> of tracking. CIPHER is in teaching mode for your first 3 days; full
-              analysis starts on day 4.
+              Day <span className="tabular">{analysis.daysTracked}</span>. We're still getting to know each other — I'll start reading
+              your patterns properly on day 4.
             </span>
           </p>
         )}
