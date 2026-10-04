@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ASCEND is offline</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; min-height: 100dvh; display: grid; place-items: center;
+        background: #08090b; color: #eeeae2; text-align: center;
+        font-family: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+        padding: 24px;
+      }
+      img { width: 64px; height: 64px; object-fit: contain; }
+      h1 { font-size: 24px; text-transform: uppercase; letter-spacing: .04em; margin: 20px 0 8px; }
+      p { color: #b3aea5; line-height: 1.6; max-width: 32ch; margin: 0 auto; font-size: 15px; }
+      button {
+        margin-top: 24px; min-height: 44px; padding: 0 22px; border: 0; border-radius: 999px;
+        background: #b8432b; color: #f6e9e2; font: inherit; font-weight: 600; cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="logo-mark.png" alt="" />
+      <h1>No connection</h1>
+      <p>ASCEND needs a connection to load your habits. Check your network and try again.</p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

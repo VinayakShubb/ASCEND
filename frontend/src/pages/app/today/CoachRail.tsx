@@ -38,8 +38,8 @@ export function CoachRail({ habits, logs, streaks }: CoachRailProps) {
 
   return (
     <aside aria-label="Coach" className="grid gap-x-10 md:grid-cols-2 xl:grid-cols-1">
-      <WeekStrip habits={habits} streaks={streaks} />
-      <NeedsAttention habits={habits} logs={logs} />
+      <WeekStrip habits={habits} streaks={streaks} trackingStart={trackingStart} />
+      <NeedsAttention habits={habits} logs={logs} starting={starting} />
       <CoachLine enabled={habits.length > 0} signature={signature} starting={starting} />
     </aside>
   );
@@ -57,14 +57,31 @@ function RailSection({ title, children, className }: { title: string; children: 
   );
 }
 
-function WeekStrip({ habits, streaks }: { habits: Habit[]; streaks: Record<string, number> }) {
+function WeekStrip({
+  habits,
+  streaks,
+  trackingStart,
+}: {
+  habits: Habit[];
+  streaks: Record<string, number>;
+  trackingStart: Date;
+}) {
   const { days, failed } = useWeekStats();
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const byDate = new Map((days ?? []).map(d => [d.date, d.weighted_score]));
   const week = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(parseISO(todayStr), 6 - i);
     const key = format(date, 'yyyy-MM-dd');
-    return { key, label: format(date, 'EEE'), long: format(date, 'EEEE'), score: byDate.get(key) ?? 0, isToday: key === todayStr };
+    // Days before the account existed are not a zero score, they're no score.
+    const tracked = date.getTime() >= trackingStart.getTime();
+    return {
+      key,
+      label: format(date, 'EEE'),
+      long: format(date, 'EEEE'),
+      score: byDate.get(key) ?? 0,
+      isToday: key === todayStr,
+      tracked,
+    };
   });
 
   const top = habits.reduce<{ name: string; streak: number } | null>((best, h) => {
@@ -79,12 +96,34 @@ function WeekStrip({ habits, streaks }: { habits: Habit[]; streaks: Record<strin
       ) : (
         <ol className="grid grid-cols-7 gap-1.5" aria-label="Daily score, last seven days">
           {week.map(day => (
-            <li key={day.key} className="flex flex-col items-center gap-1.5" aria-label={`${day.isToday ? 'Today' : day.long}: ${days ? day.score : 'loading'}`}>
-              <span aria-hidden className={cn('tabular font-display text-[15px] leading-none', day.isToday ? 'text-lane' : day.score === 0 ? 'text-lane-mute' : 'text-lane-dim')}>
-                {days ? day.score : ' '}
+            <li
+              key={day.key}
+              className="flex flex-col items-center gap-1.5"
+              aria-label={`${day.isToday ? 'Today' : day.long}: ${!day.tracked ? 'before you started' : days ? day.score : 'loading'}`}
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  'tabular font-display text-[15px] leading-none',
+                  !day.tracked
+                    ? 'text-lane-mute/50'
+                    : day.isToday
+                      ? 'text-lane'
+                      : day.score === 0
+                        ? 'text-lane-mute'
+                        : 'text-lane-dim',
+                )}
+              >
+                {!day.tracked ? '--' : days ? day.score : ' '}
               </span>
-              <span aria-hidden className="relative flex h-20 w-full items-end overflow-hidden rounded-[3px] bg-night-850">
-                {days ? (
+              <span
+                aria-hidden
+                className={cn(
+                  'relative flex h-20 w-full items-end overflow-hidden rounded-[3px]',
+                  day.tracked ? 'bg-night-850' : 'bg-night-850/40',
+                )}
+              >
+                {!day.tracked ? null : days ? (
                   <span
                     className={cn('block h-full w-full origin-bottom rounded-[3px] transition-transform duration-500 ease-out-expo', day.isToday ? 'bg-track' : 'bg-lane-dim/70')}
                     style={{ transform: `scaleY(${day.score > 0 ? Math.max(day.score, 4) / 100 : 0.025})` }}
@@ -93,7 +132,13 @@ function WeekStrip({ habits, streaks }: { habits: Habit[]; streaks: Record<strin
                   <span className="skeleton absolute inset-0" />
                 )}
               </span>
-              <span aria-hidden className={cn('text-[11px]', day.isToday ? 'font-semibold text-lane' : 'text-lane-mute')}>
+              <span
+                aria-hidden
+                className={cn(
+                  'text-[11px]',
+                  !day.tracked ? 'text-lane-mute/50' : day.isToday ? 'font-semibold text-lane' : 'text-lane-mute',
+                )}
+              >
                 {day.isToday ? 'Today' : day.label}
               </span>
             </li>
@@ -116,7 +161,7 @@ function WeekStrip({ habits, streaks }: { habits: Habit[]; streaks: Record<strin
 }
 
 /* Active habits not done for two days or more, longest gap first. */
-function NeedsAttention({ habits, logs }: { habits: Habit[]; logs: HabitLog[] }) {
+function NeedsAttention({ habits, logs, starting }: { habits: Habit[]; logs: HabitLog[]; starting: boolean }) {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const items = useMemo(() => {
     const today = parseISO(todayStr);
@@ -139,7 +184,11 @@ function NeedsAttention({ habits, logs }: { habits: Habit[]; logs: HabitLog[] })
   return (
     <RailSection title="Needs attention" className="md:border-t-0 md:pt-0 xl:border-t xl:pt-6">
       {items.length === 0 ? (
-        <p className="text-[14px] text-lane-dim">Nothing slipping. Every habit was done in the last two days.</p>
+        <p className="text-[14px] text-lane-dim">
+          {starting
+            ? "Nothing to flag yet. Keep checking habits off and I'll start watching for slips."
+            : 'Nothing slipping. Every habit was done in the last two days.'}
+        </p>
       ) : (
         <ul className="flex flex-col">
           {items.map(({ habit, days, never }) => (

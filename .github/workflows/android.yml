@@ -1,9 +1,12 @@
 name: Build Android APK
 
-# Produces an installable debug APK as a downloadable artifact. Run it from the
-# Actions tab (Run workflow), or by pushing a tag like "apk-v1". Debug APKs are
-# signed with the auto-generated debug key, so they sideload without a keystore
-# (enable "install unknown apps" on the phone). Not for the Play Store.
+# Produces an installable, signed release APK as a downloadable artifact. Run
+# it from the Actions tab (Run workflow), or by pushing a tag like "apk-v1".
+#
+# It is signed with one fixed keystore held in repo secrets, so every build
+# installs as an update over the last one instead of being rejected for a
+# mismatched signature. (A debug build is signed with a key the runner
+# generates per run, which is why those could never update each other.)
 
 on:
   workflow_dispatch:
@@ -43,14 +46,24 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Build debug APK
+      - name: Decode signing keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > "${{ runner.temp }}/ascend.keystore"
+
+      - name: Build signed release APK
         working-directory: frontend/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/ascend.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ascend-debug-apk
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          name: ascend-apk
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

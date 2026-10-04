@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
+import { differenceInCalendarDays } from 'date-fns';
 import { BoardNumber, ResultsBoard } from '../../../components/brand/Scoreboard';
 import { StatusTag } from '../../../components/brand/StatusTag';
 import { Skeleton } from '../../../components/ui/Feedback';
 import { statusFromIndex } from '../../../design/status';
+import { useTrackingStart } from '../../../hooks/useTrackingStart';
 import type { BoardStats } from './useTodayData';
 
 interface TodayBoardProps {
@@ -18,6 +20,12 @@ export function TodayBoard({ board, done, total }: TodayBoardProps) {
   const maxToday = board.ceiling.max_today;
   const gain = Math.max(0, maxToday - di);
 
+  // The first days are an introduction, not a verdict: a day-one index is
+  // built on a single day, so labelling it "slipping" is just unkind.
+  const trackingStart = useTrackingStart();
+  const daysTracked = differenceInCalendarDays(new Date(), trackingStart) + 1;
+  const starting = daysTracked <= 3;
+
   return (
     <ResultsBoard>
       <div className="grid grid-cols-3 sm:grid-cols-[1.35fr_1fr_1fr_1fr]">
@@ -26,9 +34,21 @@ export function TodayBoard({ board, done, total }: TodayBoardProps) {
           <div className="flex flex-col items-end gap-1.5 text-right sm:mt-3 sm:items-start sm:text-left">
             <span className="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
               <span className="text-[14px] font-semibold text-lane">Discipline Index</span>
-              <StatusTag status={statusFromIndex(di)} className="px-2 py-0.5 text-[11px]" />
+              {starting ? (
+                <span className="rounded-full border border-[#f7dfa5]/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#f7dfa5]">
+                  Day {daysTracked}
+                </span>
+              ) : (
+                <StatusTag status={statusFromIndex(di)} className="px-2 py-0.5 text-[11px]" />
+              )}
             </span>
-            <span className="text-[12px] text-lane-mute">7-day average of daily scores</span>
+            <span className="text-[12px] text-lane-mute">
+              {!starting
+                ? '7-day average of daily scores'
+                : daysTracked === 1
+                  ? 'Your first day. It grows into a 7-day average.'
+                  : `Your ${daysTracked} days so far. It grows into a 7-day average.`}
+            </span>
           </div>
         </div>
 
@@ -37,9 +57,9 @@ export function TodayBoard({ board, done, total }: TodayBoardProps) {
         </Figure>
 
         <Figure label="Done" hint={done === total ? 'all habits' : `${total - done} left`}>
-          <span className="flex items-baseline gap-1.5">
+          <span className="flex items-end gap-1.5">
             <BoardNumber value={done} className="text-[34px] text-lane sm:text-[44px]" />
-            <span className="tabular text-[13px] text-lane-dim">of {total}</span>
+            <span className="tabular mb-1 text-[13px] text-lane-dim">of {total}</span>
           </span>
         </Figure>
 
