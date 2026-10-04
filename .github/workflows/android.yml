@@ -8,6 +8,9 @@ name: Build Android APK
 # mismatched signature. (A debug build is signed with a key the runner
 # generates per run, which is why those could never update each other.)
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -58,6 +61,8 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon
@@ -67,3 +72,13 @@ jobs:
           name: ascend-apk
           path: frontend/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      # A public release gives a direct .apk link: no GitHub sign-in, no zip to
+      # unpack on the phone. /releases/latest always points at the newest one.
+      - name: Publish the APK as the latest release
+        working-directory: frontend/android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/ascend-beta.apk"
+          gh release create "build-${{ github.run_number }}" "$RUNNER_TEMP/ascend-beta.apk"             --repo "$GITHUB_REPOSITORY"             --title "ASCEND Beta 1.0.${{ github.run_number }}"             --notes "Tap **ascend-beta.apk** below to install or update. It installs over the previous version and keeps your login."             --latest
