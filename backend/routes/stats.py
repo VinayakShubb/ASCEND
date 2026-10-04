@@ -69,8 +69,9 @@ def stats_summary(
     habits = get_habits(current_user["id"])
     logs = get_logs(current_user["id"])
     as_of = (end or today).isoformat()
+    start = calculations.tracking_start_date(current_user.get("created_at"), logs, today)
     return {
-        "discipline_index": calculations.calculate_discipline_index(habits, logs, as_of),
+        "discipline_index": calculations.calculate_discipline_index(habits, logs, as_of, start_date=start),
         "today_completion_pct": round(calculations.calculate_daily_completion(habits, logs, as_of)),
         "today_weighted_score": round(calculations.calculate_weighted_score(habits, logs, as_of)),
     }
@@ -86,8 +87,9 @@ def stats_ceiling(current_user: dict = Depends(get_current_user), today: date = 
     habits = get_habits(current_user["id"])
     logs = get_logs(current_user["id"])
     today_str = today.isoformat()
+    start = calculations.tracking_start_date(current_user.get("created_at"), logs, today)
 
-    current = calculations.calculate_discipline_index(habits, logs, today_str)
+    current = calculations.calculate_discipline_index(habits, logs, today_str, start_date=start)
 
     active_habits = [h for h in habits if not h["archived"]]
     already_done_today = {l["habit_id"] for l in logs if l["date"] == today_str and l["status"] == "completed"}
@@ -96,6 +98,6 @@ def stats_ceiling(current_user: dict = Depends(get_current_user), today: date = 
         for h in active_habits
         if h["id"] not in already_done_today
     ]
-    max_today = min(100, calculations.calculate_discipline_index(habits, simulated_logs, today_str))
+    max_today = min(100, calculations.calculate_discipline_index(habits, simulated_logs, today_str, start_date=start))
 
     return {"current": current, "max_today": max_today}

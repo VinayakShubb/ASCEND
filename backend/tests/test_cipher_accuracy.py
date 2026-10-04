@@ -54,8 +54,13 @@ def ref_pct(habits, logs, d: date) -> float:
     return sum(1 for h in active if (h["id"], d.isoformat()) in done) / len(active) * 100
 
 
-def ref_di_exact(habits, logs, today: date) -> float:
-    return sum(ref_score(habits, logs, today - timedelta(days=i)) for i in range(7)) / 7
+def ref_di_exact(habits, logs, end: date, start: date | None = None) -> float:
+    days = [end - timedelta(days=i) for i in range(7)]
+    if start is not None:
+        if end < start:
+            return 0.0
+        days = [d for d in days if d >= start]
+    return sum(ref_score(habits, logs, d) for d in days) / len(days)
 
 
 def ref_streak(habit_id, logs, today: date) -> int:
@@ -153,8 +158,8 @@ def test_headline_numbers_match_reference(user):
     w7, w30 = ref_window(TODAY, 7, start), ref_window(TODAY, 30, start)
 
     assert m["daysTracked"] == (TODAY - start).days + 1
-    assert m["score"]["value"] == round(ref_di_exact(habits, logs, TODAY))
-    assert m["score"]["weekAgo"] == round(ref_di_exact(habits, logs, TODAY - timedelta(days=7)))
+    assert m["score"]["value"] == round(ref_di_exact(habits, logs, TODAY, start))
+    assert m["score"]["weekAgo"] == round(ref_di_exact(habits, logs, TODAY - timedelta(days=7), start))
     assert m["score"]["momentum"] == m["score"]["value"] - m["score"]["weekAgo"]
     assert m["score"]["baseline"] == round(sum(ref_score(habits, logs, d) for d in w30) / len(w30))
 
@@ -200,12 +205,13 @@ def test_per_habit_numbers_match_reference(user):
 def test_impact_today_equals_simulated_di_gain(user):
     habits, logs, created_at = user
     m = run(habits, logs, created_at)
-    base = ref_di_exact(habits, logs, TODAY)
+    start = ref_start(date.fromisoformat(created_at[:10]), logs, TODAY)
+    base = ref_di_exact(habits, logs, TODAY, start)
     for h in m["habits"]:
         if h["doneToday"]:
             assert h["impactToday"] == 0
             continue
-        gained = ref_di_exact(habits, with_completions(logs, h["id"], [TODAY]), TODAY) - base
+        gained = ref_di_exact(habits, with_completions(logs, h["id"], [TODAY]), TODAY, start) - base
         assert h["impactToday"] == round(gained, 1)
 
 
@@ -214,11 +220,17 @@ def test_impact_today_equals_simulated_di_gain(user):
 def test_points_lost_equals_simulated_di_if_misses_were_done(user):
     habits, logs, created_at = user
     m = run(habits, logs, created_at)
-    base = ref_di_exact(habits, logs, TODAY)
+    start = ref_start(date.fromisoformat(created_at[:10]), logs, TODAY)
+    base = ref_di_exact(habits, logs, TODAY, start)
     done = ref_done(logs)
     for h in m["habits"]:
-        missed = [TODAY - timedelta(days=i) for i in range(1, 7) if (h["id"], (TODAY - timedelta(days=i)).isoformat()) not in done]
-        recovered = ref_di_exact(habits, with_completions(logs, h["id"], missed), TODAY) - base
+        missed = [
+            d
+            for i in range(1, 7)
+            for d in [TODAY - timedelta(days=i)]
+            if d >= start and (h["id"], d.isoformat()) not in done
+        ]
+        recovered = ref_di_exact(habits, with_completions(logs, h["id"], missed), TODAY, start) - base
         assert h["pointsLost7"] == round(recovered, 1)
         assert len(h["missedDays"]) == len(missed)
 
@@ -228,13 +240,16 @@ def test_points_lost_equals_simulated_di_if_misses_were_done(user):
 def test_max_today_equals_di_with_everything_done_today(user):
     habits, logs, created_at = user
     m = run(habits, logs, created_at)
+    start = ref_start(date.fromisoformat(created_at[:10]), logs, TODAY)
     all_done = logs + [
         {"habit_id": h["id"], "date": TODAY.isoformat(), "status": "completed"} for h in ref_active(habits)
     ]
-    assert m["score"]["maxToday"] == min(100, round(ref_di_exact(habits, all_done, TODAY)))
+    assert m["score"]["maxToday"] == min(100, round(ref_di_exact(habits, all_done, TODAY, start)))
     assert m["score"]["maxToday"] >= m["score"]["value"]
     # The ceiling endpoint uses the same definition.
-    assert m["score"]["maxToday"] == min(100, calculations.calculate_discipline_index(habits, all_done, TODAY.isoformat()))
+    assert m["score"]["maxToday"] == min(
+        100, calculations.calculate_discipline_index(habits, all_done, TODAY.isoformat(), start_date=start)
+    )
 
 
 @SETTINGS
@@ -253,7 +268,8 @@ def test_focus_projection_equals_simulated_di(user):
     assert focus["current"] == current
     assert current < focus["target"] <= 7
     simulated = with_completions(logs, h["id"], missing[: focus["target"] - current])
-    assert focus["projectedDi"] == min(100, round(ref_di_exact(habits, simulated, TODAY)))
+    start = ref_start(date.fromisoformat(created_at[:10]), logs, TODAY)
+    assert focus["projectedDi"] == min(100, round(ref_di_exact(habits, simulated, TODAY, start)))
     assert focus["projectedDi"] >= m["score"]["value"]
 
 
@@ -328,7 +344,8 @@ def test_explanations_quote_the_same_numbers(user):
     if any(not h["doneToday"] for h in m["habits"]):
         assert f"+{m['score']['maxToday'] - m['score']['value']}" in m["score"]["explain"]["maxToday"]
     for d in m["daily7"]:
-        assert str(d["score"]) in m["score"]["explain"]["value"]
+        if d["tracked"]:
+            assert str(d["score"]) in m["score"]["explain"]["value"]
     for h in m["habits"]:
         if h["missedDays"]:
             assert f"cost {h['pointsLost7']} DI in total" in h["lossExplain"]

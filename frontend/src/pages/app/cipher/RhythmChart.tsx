@@ -17,8 +17,8 @@ export function RhythmSection({ analysis }: { analysis: CipherAnalysis }) {
       <SectionHead id="cipher-rhythm" title="Weekly rhythm" sub="Average completion by weekday, last 8 weeks" />
 
       {hasData ? (
-        <div className="h-[220px] w-full" role="img" aria-label={analysis.weekdays.map(d => `${d.day} ${d.pct ?? 'no data'}${d.pct === null ? '' : '%'}`).join(', ')}>
-          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 720, height: 220 }}>
+        <div className="h-[220px] w-full min-w-0 overflow-hidden" role="img" aria-label={analysis.weekdays.map(d => `${d.day} ${d.pct ?? 'no data'}${d.pct === null ? '' : '%'}`).join(', ')}>
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 220 }}>
             <BarChart data={data} margin={{ top: 24, right: 0, left: -28, bottom: 0 }} barCategoryGap="22%">
               <XAxis dataKey="day" tickLine={false} axisLine={{ stroke: 'var(--color-lane-line-strong)' }} tick={{ fill: 'var(--color-lane-dim)', fontSize: 12 }} />
               <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickLine={false} axisLine={false} tick={{ fill: 'var(--color-lane-mute)', fontSize: 11 }} />

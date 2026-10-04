@@ -105,10 +105,17 @@ def _weekly_completion_and_streak(habit_id: str, habit_name: str, logs: list[dic
 # FEATURE 3 -- Live AI Coach (Analytics sidebar)
 # -------------------------------------------------------------------------
 
-def get_coach_insight(user_id: str, habits: list[dict], logs: list[dict], today: Optional[date] = None) -> Optional[dict]:
+def get_coach_insight(
+    user_id: str,
+    habits: list[dict],
+    logs: list[dict],
+    today: Optional[date] = None,
+    created_at: Optional[str] = None,
+) -> Optional[dict]:
     today = today or date.today()
     today_str = today.isoformat()
-    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
+    start_date = calculations.tracking_start_date(created_at, logs, today)
+    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str, start_date=start_date)
     today_completion_percent = round(calculations.calculate_daily_completion(habits, logs, today_str))
     day_of_week = DAY_NAMES[(today.weekday() + 1) % 7]  # Python Mon=0 -> JS-style Sun=0
 

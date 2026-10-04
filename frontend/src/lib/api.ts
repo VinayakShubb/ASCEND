@@ -278,7 +278,7 @@ export interface CipherAnalysis {
     explain: { value: string; baseline: string; weekAgo: string; maxToday: string };
   };
   metrics: CipherMetric[];
-  daily7: Array<{ date: string; day: string; score: number; isToday: boolean }>;
+  daily7: Array<{ date: string; day: string; score: number; isToday: boolean; tracked?: boolean }>;
   headline: string;
   verdict: string;
   strengths: string;

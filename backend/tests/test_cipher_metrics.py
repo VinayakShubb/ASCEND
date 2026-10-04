@@ -274,3 +274,59 @@ def test_every_habit_gets_a_note_and_status_even_without_ai(metrics):
     assert {h["name"] for h in analysis["habits"]} == {"Gym", "Read"}
     assert all(h["note"] and h["status"] in ("on track", "building", "slipping") for h in analysis["habits"])
     assert analysis["headline"] and analysis["strengths"] and analysis["risks"]
+
+
+# --- New-user grace period ------------------------------------------------
+
+def test_first_day_is_scored_on_that_day_alone():
+    """Someone who signed up today and finished everything sits at 100, not
+    100/7. The days before the account existed must not count as zeros."""
+    habits = [habit("e", "Read", "easy"), habit("h", "Gym", "hard")]
+    logs = logs_for("e", [0]) + logs_for("h", [0])
+
+    m = compute(habits, logs, registered_days_ago=0)
+
+    assert m["daysTracked"] == 1
+    assert m["isNewUser"] is True
+    assert m["score"]["value"] == 100
+
+
+def test_discipline_index_averages_only_tracked_days():
+    habits = [habit("e", "Read", "easy")]
+    logs = logs_for("e", [0, 1])  # done 2 of the 3 days tracked so far
+    start = TODAY - timedelta(days=2)
+
+    assert calculations.calculate_discipline_index(habits, logs, TODAY.isoformat(), start_date=start) == round(200 / 3)
+    # Without a start date the window is the whole week, as before.
+    assert calculations.calculate_discipline_index(habits, logs, TODAY.isoformat()) == round(200 / 7)
+
+
+def test_index_before_the_account_existed_is_zero():
+    habits = [habit("e", "Read", "easy")]
+    logs = logs_for("e", [0])
+    week_ago = (TODAY - timedelta(days=7)).isoformat()
+
+    assert calculations.calculate_discipline_index(habits, logs, week_ago, start_date=TODAY) == 0
+
+
+def test_new_user_is_not_charged_for_days_before_signup():
+    habits = [habit("e", "Read", "easy")]
+    logs = logs_for("e", [0])
+
+    m = compute(habits, logs, registered_days_ago=0)
+    read = m["habits"][0]
+
+    assert read["missedDays"] == []
+    assert read["pointsLost7"] == 0
+    # Only today counts towards the index; the rest of the week is untracked.
+    assert sum(1 for d in m["daily7"] if d["tracked"]) == 1
+
+
+def test_weekly_focus_waits_for_a_full_week():
+    """The projection assumes a week to spread extra days over, so a brand new
+    account gets no "this week's focus" yet."""
+    habits = [habit("e", "Read", "easy")]
+    logs = logs_for("e", [0])
+
+    assert compute(habits, logs, registered_days_ago=0)["focus"] is None
+    assert compute(habits, logs, registered_days_ago=90)["focus"] is not None

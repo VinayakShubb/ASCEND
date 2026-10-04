@@ -56,10 +56,30 @@ def calculate_weighted_score(habits: list[dict], logs: list[dict], date_str: str
     return (earned_score / potential_score) * 100
 
 
-def calculate_discipline_index(habits: list[dict], logs: list[dict], end_date_str: Optional[str] = None) -> int:
-    """7-day rolling average of daily weighted scores, ending at end_date_str (default today)."""
+DISCIPLINE_WINDOW_DAYS = 7
+
+
+def calculate_discipline_index(
+    habits: list[dict],
+    logs: list[dict],
+    end_date_str: Optional[str] = None,
+    start_date: Optional[date] = None,
+) -> int:
+    """Rolling average of daily weighted scores over the 7 days ending at
+    end_date_str (default today).
+
+    `start_date` is the day this user started tracking. Someone who signed up
+    two days ago is averaged over those two days only, so a perfect first day
+    reads as 100 instead of 100/7 -- without it the days before they existed
+    count as zeros and bury every new user.
+    """
     end_date = date.fromisoformat(end_date_str) if end_date_str else date.today()
-    days = 7
+    days = DISCIPLINE_WINDOW_DAYS
+    if start_date is not None:
+        tracked = (end_date - start_date).days + 1
+        if tracked <= 0:
+            return 0  # the window ends before this user started tracking
+        days = min(days, tracked)
     total_score = 0.0
     for i in range(days):
         d = (end_date - timedelta(days=i)).isoformat()

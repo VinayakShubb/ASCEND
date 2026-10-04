@@ -111,7 +111,9 @@ def get_coach(current_user: dict = Depends(get_current_user), today: date = Depe
         "coach",
         today,
         _data_fingerprint(habits, logs, today.isoformat()),
-        lambda: _with_timestamp(_validated(CoachOutput, ai_coach.get_coach_insight(username, habits, logs, today=today))),
+        lambda: _with_timestamp(_validated(CoachOutput, ai_coach.get_coach_insight(
+                    username, habits, logs, today=today, created_at=current_user.get("created_at")
+                ))),
         daily_limit=config.AI_COACH_DAILY_LIMIT,
     )
 

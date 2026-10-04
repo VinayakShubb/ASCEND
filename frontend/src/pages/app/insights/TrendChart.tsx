@@ -42,8 +42,8 @@ export function TrendChart({ data, average }: { data: TrendPoint[]; average: num
   const ticks = [0, 7, 14, 21, 29].map(i => data[i]?.date).filter(Boolean) as string[];
 
   return (
-    <div className="h-[260px] w-full min-w-0 sm:h-[300px]">
-      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 720, height: 260 }}>
+    <div className="h-[260px] w-full min-w-0 overflow-hidden sm:h-[300px]">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 260 }}>
         <AreaChart data={data} margin={{ top: 24, right: 16, bottom: 0, left: -8 }}>
           <defs>
             <linearGradient id="trend-wash" x1="0" y1="0" x2="0" y2="1">

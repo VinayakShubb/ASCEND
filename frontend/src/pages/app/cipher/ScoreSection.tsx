@@ -98,28 +98,55 @@ function ScoreBoard({ analysis }: { analysis: CipherAnalysis }) {
       <div className="mt-6 border-t border-lane-line pt-4">
         <p className="mb-3 text-[12px] font-medium text-lane-dim">Daily score, last 7 days</p>
         <ol className="grid grid-cols-7 gap-1.5 sm:gap-2" aria-label="Daily score, last 7 days">
-          {analysis.daily7.map((d, i) => (
-            <li key={d.date} className="flex flex-col items-center gap-1.5">
-              <span className="sr-only">{`${d.isToday ? 'Today' : d.day}: ${d.score}`}</span>
-              <span className={cn('tabular text-[12px] font-semibold', d.isToday ? 'text-lane' : 'text-lane-dim')} aria-hidden>
-                {d.score}
-              </span>
-              <span className="relative flex h-20 w-full items-end overflow-hidden rounded-[3px] bg-night-800" aria-hidden>
-                {/* Full-height bar scaled from the bottom: transform animates on the
-                    GPU, where animating height would re-run layout every frame. */}
-                <motion.span
-                  className="block h-full w-full origin-bottom rounded-t-[3px]"
-                  style={{ backgroundColor: d.isToday ? 'var(--color-track)' : 'rgb(179 174 165 / 0.7)' }}
-                  initial={reduce ? false : { scaleY: 0 }}
-                  animate={{ scaleY: Math.max(4, d.score) / 100 }}
-                  transition={{ duration: duration.slow, ease: ease.out, delay: 0.25 + i * 0.05 }}
-                />
-              </span>
-              <span className={cn('text-[11px]', d.isToday ? 'font-semibold text-lane' : 'text-lane-mute')} aria-hidden>
-                {d.isToday ? 'Today' : d.day}
-              </span>
-            </li>
-          ))}
+          {analysis.daily7.map((d, i) => {
+            // Days before the account existed aren't a zero score, they're no
+            // score at all -- show them as empty rather than as a failure.
+            const untracked = d.tracked === false;
+            return (
+              <li key={d.date} className="flex flex-col items-center gap-1.5">
+                <span className="sr-only">
+                  {untracked ? `${d.day}: before you started` : `${d.isToday ? 'Today' : d.day}: ${d.score}`}
+                </span>
+                <span
+                  className={cn(
+                    'tabular text-[12px] font-semibold',
+                    untracked ? 'text-lane-mute/60' : d.isToday ? 'text-lane' : 'text-lane-dim',
+                  )}
+                  aria-hidden
+                >
+                  {untracked ? '--' : d.score}
+                </span>
+                <span
+                  className={cn(
+                    'relative flex h-20 w-full items-end overflow-hidden rounded-[3px]',
+                    untracked ? 'bg-night-800/40' : 'bg-night-800',
+                  )}
+                  aria-hidden
+                >
+                  {/* Full-height bar scaled from the bottom: transform animates on the
+                      GPU, where animating height would re-run layout every frame. */}
+                  {!untracked && (
+                    <motion.span
+                      className="block h-full w-full origin-bottom rounded-t-[3px]"
+                      style={{ backgroundColor: d.isToday ? 'var(--color-track)' : 'rgb(179 174 165 / 0.7)' }}
+                      initial={reduce ? false : { scaleY: 0 }}
+                      animate={{ scaleY: Math.max(4, d.score) / 100 }}
+                      transition={{ duration: duration.slow, ease: ease.out, delay: 0.25 + i * 0.05 }}
+                    />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    'text-[11px]',
+                    untracked ? 'text-lane-mute/60' : d.isToday ? 'font-semibold text-lane' : 'text-lane-mute',
+                  )}
+                  aria-hidden
+                >
+                  {d.isToday ? 'Today' : d.day}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </div>
     </ResultsBoard>

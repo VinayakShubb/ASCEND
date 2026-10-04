@@ -199,10 +199,15 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
     def avg(field: str, window: list[date]) -> float:
         return sum(by_date[d][field] for d in window) / len(window)
 
-    # DI is the average of the last 7 calendar days' weighted scores.
-    di_exact = sum(day_score(d) for d in last7_calendar) / 7
-    di = calculations.calculate_discipline_index(habits, logs, today_str)
-    di_week_ago = calculations.calculate_discipline_index(habits, logs, (today - timedelta(days=7)).isoformat())
+    # w7 is the last 7 days clipped to the day tracking started, so a new
+    # account is averaged over the days it has actually existed rather than
+    # being buried by zeros from before it existed.
+    di_days = len(w7)
+    di_exact = avg("score", w7)
+    di = calculations.calculate_discipline_index(habits, logs, today_str, start_date=reg_date)
+    di_week_ago = calculations.calculate_discipline_index(
+        habits, logs, (today - timedelta(days=7)).isoformat(), start_date=reg_date
+    )
     baseline = round(avg("score", w30))
     completion7 = round(avg("pct", w7))
     completion30 = round(avg("pct", w30))
@@ -213,7 +218,9 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
 
     # --- Per-habit stats --------------------------------------------------
     total_weight = sum(calculations.DIFFICULTY_MULTIPLIERS.get(h["difficulty"], 1.0) for h in active) or 1.0
-    past_six_days = [today - timedelta(days=i) for i in range(6, 0, -1)]
+    # The days before today that this user was actually tracking, so a new
+    # account is never charged for misses from before it existed.
+    past_six_days = [d for d in w7 if d < today]
 
     habit_stats = []
     for h in active:
@@ -224,8 +231,8 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         rate30 = round(done30 / len(w30) * 100)
         weight_share = calculations.DIFFICULTY_MULTIPLIERS.get(h["difficulty"], 1.0) / total_weight
         # One completed day of this habit adds (its share of a day's weight)
-        # x 100 / 7 to the Discipline Index, because DI averages 7 days.
-        point_value = weight_share * 100 / 7
+        # x 100 / di_days to the Discipline Index, because DI averages di_days.
+        point_value = weight_share * 100 / di_days
         missed_dates = [d for d in past_six_days if d.isoformat() not in completed]
         done_today = today_str in completed
         done_last7 = sum(1 for d in last7_calendar if d.isoformat() in completed)
@@ -313,6 +320,7 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
             "day": WEEKDAY_NAMES[d.weekday()],
             "score": round(day_score(d)),
             "isToday": d == today,
+            "tracked": d >= reg_date,
         }
         for d in last7_calendar
     ]
@@ -333,7 +341,7 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
 
     focus = None
     candidates = sorted((h for h in habit_stats if h["doneLast7"] < 7), key=lambda h: (-focus_gain(h), h["rate7"]))
-    if candidates and len(w7) >= 3:
+    if candidates and di_days >= calculations.DISCIPLINE_WINDOW_DAYS:
         h = candidates[0]
         target = min(7, max(h["doneLast7"] + 2, 4))
         extra = target - h["doneLast7"]
@@ -424,13 +432,21 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         },
     ]
 
-    scores_text = ", ".join(str(d["score"]) for d in daily7)
+    tracked_days = [d for d in daily7 if d["tracked"]]
+    scores_text = ", ".join(str(d["score"]) for d in tracked_days)
     relation = (
         f"{di - baseline} above" if di > baseline else f"{baseline - di} below" if di < baseline else "level with"
     )
     open_names = [h["name"] for h in open_today]
     score_explain = {
-        "value": f"The average of your last 7 daily scores ({scores_text}). Today counts as it stands now.",
+        "value": (
+            f"The average of your last 7 daily scores ({scores_text}). Today counts as it stands now."
+            if len(tracked_days) >= calculations.DISCIPLINE_WINDOW_DAYS
+            else (
+                f"The average of the {_plural(len(tracked_days), 'day')} you have tracked so far ({scores_text}). "
+                "Days before you joined are not counted, and today counts as it stands now."
+            )
+        ),
         "baseline": f"Your average daily score over the last {_plural(len(w30), 'day')}. This week is {relation} it.",
         "weekAgo": f"Your Discipline Index on {(today - timedelta(days=7)).strftime('%d %b')}.{mover_text}",
         "maxToday": (

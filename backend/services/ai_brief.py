@@ -102,9 +102,10 @@ def get_daily_brief(
 
     active_habits = [h for h in habits if not h["archived"]]
     habit_intent_context = habit_intent.build_habit_intent_context(active_habits)
-    days_since_registration = (today - calculations.tracking_start_date(created_at, logs, today)).days + 1
+    start_date = calculations.tracking_start_date(created_at, logs, today)
+    days_since_registration = (today - start_date).days + 1
     is_grace_period = days_since_registration <= BRIEF_GRACE_DAYS
-    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str)
+    discipline_index = calculations.calculate_discipline_index(habits, logs, today_str, start_date=start_date)
     today_weighted_score = round(calculations.calculate_weighted_score(habits, logs, today_str))
     today_completion_percent = round(calculations.calculate_daily_completion(habits, logs, today_str))
     target_status = _get_status_from_index(discipline_index, is_grace_period)

@@ -148,7 +148,7 @@ def test_brief_avoids_quotes_from_earlier_days(client, fake_db, monkeypatch):
 def test_coach_is_generated_once_per_day(client, fake_db, monkeypatch):
     calls = []
 
-    def fake_coach(username, habits, logs, today=None):
+    def fake_coach(username, habits, logs, today=None, created_at=None):
         calls.append(today)
         return {"status": "solid", "headline": "h", "insight": "i", "action": "a"}
 
