@@ -145,7 +145,7 @@ def test_brief_avoids_quotes_from_earlier_days(client, fake_db, monkeypatch):
 
 # --- Live coach (analytics sidebar) --------------------------------------
 
-def test_coach_is_generated_once_per_day(client, fake_db, monkeypatch):
+def _stub_coach(monkeypatch):
     calls = []
 
     def fake_coach(username, habits, logs, today=None, created_at=None):
@@ -153,12 +153,40 @@ def test_coach_is_generated_once_per_day(client, fake_db, monkeypatch):
         return {"status": "solid", "headline": "h", "insight": "i", "action": "a"}
 
     monkeypatch.setattr(ai_coach, "get_coach_insight", fake_coach)
+    return calls
+
+
+def test_coach_is_reused_when_nothing_changed(client, fake_db, monkeypatch):
+    calls = _stub_coach(monkeypatch)
 
     client.get("/ai/coach", headers=TZ)
-    add_log(fake_db, "2026-10-01")  # even new data doesn't trigger a second coach call today
     client.get("/ai/coach", headers=TZ)
 
     assert len(calls) == 1
+
+
+def test_coach_refreshes_when_the_day_changes(client, fake_db, monkeypatch):
+    """Checking a habit off has to move the note on. A coach still insisting
+    you have not started something you just finished is worse than no coach."""
+    calls = _stub_coach(monkeypatch)
+
+    client.get("/ai/coach", headers=TZ)
+    add_log(fake_db, "2026-10-01")
+    client.get("/ai/coach", headers=TZ)
+
+    assert len(calls) == 2
+
+
+def test_coach_stops_regenerating_at_the_daily_limit(client, fake_db, monkeypatch):
+    calls = _stub_coach(monkeypatch)
+    monkeypatch.setattr(config, "AI_COACH_DAILY_LIMIT", 2)
+
+    for day in ("2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23"):
+        client.get("/ai/coach", headers=TZ)
+        add_log(fake_db, day)
+    client.get("/ai/coach", headers=TZ)
+
+    assert len(calls) == 2
 
 
 def test_coach_with_malformed_ai_output_returns_null_instead_of_500(client, monkeypatch):

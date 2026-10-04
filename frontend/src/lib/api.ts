@@ -233,6 +233,9 @@ export interface CoachOutput {
   headline: string;
   insight: string;
   action: string;
+  // When the note was written, so a note from earlier today reads as a
+  // snapshot rather than as live commentary.
+  generatedAt?: string;
 }
 
 // CIPHER v2: every number is computed by the backend

@@ -442,10 +442,9 @@ def compute_cipher_metrics(habits: list[dict], logs: list[dict], today: date, cr
         "value": (
             f"The average of your last 7 daily scores ({scores_text}). Today counts as it stands now."
             if len(tracked_days) >= calculations.DISCIPLINE_WINDOW_DAYS
-            else (
-                f"The average of the {_plural(len(tracked_days), 'day')} you have tracked so far ({scores_text}). "
-                "Days before you joined are not counted, and today counts as it stands now."
-            )
+            else f"Today's score ({scores_text}). It grows into a 7-day average as you keep going."
+            if len(tracked_days) == 1
+            else f"The average of your {len(tracked_days)} days so far ({scores_text}). It grows into a 7-day average as you keep going."
         ),
         "baseline": f"Your average daily score over the last {_plural(len(w30), 'day')}. This week is {relation} it.",
         "weekAgo": f"Your Discipline Index on {(today - timedelta(days=7)).strftime('%d %b')}.{mover_text}",

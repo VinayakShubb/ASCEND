@@ -49,7 +49,7 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
 
 # Per-user AI generation limits, per local calendar day.
 AI_BRIEF_DAILY_LIMIT = int(os.environ.get("AI_BRIEF_DAILY_LIMIT", "1"))
-AI_COACH_DAILY_LIMIT = int(os.environ.get("AI_COACH_DAILY_LIMIT", "1"))
+AI_COACH_DAILY_LIMIT = int(os.environ.get("AI_COACH_DAILY_LIMIT", "8"))
 AI_CIPHER_DAILY_LIMIT = int(os.environ.get("AI_CIPHER_DAILY_LIMIT", "20"))
 # Minimum gap between two CIPHER generations for the same user. Requests
 # inside the gap get the previous analysis back instead of a new Groq call.

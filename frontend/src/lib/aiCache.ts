@@ -6,7 +6,6 @@
 // double-prefix these keys).
 
 const BRIEF_CACHE_VERSION = 'v2';
-const COACH_CACHE_VERSION = 'v2';
 
 interface CachedBrief<T> {
   date: string;
@@ -46,25 +45,3 @@ export function pushQuoteHistory(username: string, quote: string): void {
   history.push(quote);
   localStorage.setItem(`ascend_ai_quote_history_${username}`, JSON.stringify(history));
 }
-
-function getDayCache<T>(prefix: string, version: string, userId: string, dateStr: string): T | null {
-  const raw = localStorage.getItem(`${prefix}_${version}_${userId}_${dateStr}`);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function setDayCache<T>(prefix: string, version: string, userId: string, dateStr: string, value: T): void {
-  localStorage.setItem(`${prefix}_${version}_${userId}_${dateStr}`, JSON.stringify(value));
-}
-
-// Coach/Cipher cache keys are keyed by Date.toDateString() (e.g. "Mon Aug 16
-// 2026"), not an ISO date -- kept as-is from the original implementation.
-export const todayKey = () => new Date().toDateString();
-
-export const getCoachCache = <T>(userId: string) => getDayCache<T>('ascend_ai_coach', COACH_CACHE_VERSION, userId, todayKey());
-export const setCoachCache = <T>(userId: string, value: T) => setDayCache('ascend_ai_coach', COACH_CACHE_VERSION, userId, todayKey(), value);
-

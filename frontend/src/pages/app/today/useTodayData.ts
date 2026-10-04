@@ -3,7 +3,7 @@ import { format, subDays } from 'date-fns';
 import { useAuth } from '../../../context/AuthContext';
 import { useData } from '../../../context/DataContext';
 import { aiApi, statsApi, type BriefOutput, type CoachOutput, type DayStat, type StatsCeiling, type StatsSummary } from '../../../lib/api';
-import { getBriefCache, getCoachCache, getQuoteHistory, pushQuoteHistory, setBriefCache, setCoachCache } from '../../../lib/aiCache';
+import { getBriefCache, getQuoteHistory, pushQuoteHistory, setBriefCache } from '../../../lib/aiCache';
 
 export interface BoardStats {
   summary: StatsSummary;
@@ -118,20 +118,22 @@ export function useDailyBrief(enabled: boolean): Load<BriefOutput> {
 
 /* CIPHER's coach line: one per day. Null from the server means there is no
    note yet (too little history) or the AI is unavailable. */
-export function useCoachLine(enabled: boolean): Load<CoachOutput> {
+/* `signature` changes whenever the habits or today's check-offs do, which
+   re-asks the server for the note. The server decides whether that is worth a
+   new generation; caching it here as well used to freeze the note for the
+   whole day, so it kept insisting you hadn't started a habit you just did. */
+export function useCoachLine(enabled: boolean, signature: string): Load<CoachOutput> {
   const { user } = useAuth();
   const username = user?.username;
-  const cached = username ? getCoachCache<CoachOutput>(username) : null;
   const [fetched, setFetched] = useState<{ key: string; value: CoachOutput | null } | null>(null);
-  const key = `${username}`;
+  const key = `${username}|${signature}`;
 
   useEffect(() => {
-    if (!enabled || !username || cached) return;
+    if (!enabled || !username) return;
     let cancelled = false;
     aiApi
       .coach()
       .then(coach => {
-        if (coach) setCoachCache(username, coach);
         if (!cancelled) setFetched({ key, value: coach });
       })
       .catch(() => {
@@ -144,7 +146,8 @@ export function useCoachLine(enabled: boolean): Load<CoachOutput> {
   }, [enabled, username, key]);
 
   if (!enabled || !username) return { state: 'none' };
-  if (cached) return { state: 'ready', value: cached };
-  if (!fetched || fetched.key !== key) return { state: 'loading' };
+  // Keep the previous note on screen while a refresh is in flight rather than
+  // dropping back to a skeleton on every check-off.
+  if (!fetched) return { state: 'loading' };
   return fetched.value ? { state: 'ready', value: fetched.value } : { state: 'none' };
 }

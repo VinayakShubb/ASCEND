@@ -19,11 +19,23 @@ interface CoachRailProps {
    CIPHER's line for the day. A side rail on wide screens, below the lanes
    on smaller ones. */
 export function CoachRail({ habits, logs, streaks }: CoachRailProps) {
+  // Re-ask CIPHER for its note whenever the habits or today's check-offs
+  // change, so it never keeps insisting on something you have just done.
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const signature = useMemo(() => {
+    const done = logs
+      .filter(l => l.date === todayStr && l.status === 'completed')
+      .map(l => l.habit_id)
+      .sort()
+      .join(',');
+    return `${habits.length}:${done}`;
+  }, [habits.length, logs, todayStr]);
+
   return (
     <aside aria-label="Coach" className="grid gap-x-10 md:grid-cols-2 xl:grid-cols-1">
       <WeekStrip habits={habits} streaks={streaks} />
       <NeedsAttention habits={habits} logs={logs} />
-      <CoachLine enabled={habits.length > 0} />
+      <CoachLine enabled={habits.length > 0} signature={signature} />
     </aside>
   );
 }
@@ -143,8 +155,8 @@ function NeedsAttention({ habits, logs }: { habits: Habit[]; logs: HabitLog[] })
   );
 }
 
-function CoachLine({ enabled }: { enabled: boolean }) {
-  const coach = useCoachLine(enabled);
+function CoachLine({ enabled, signature }: { enabled: boolean; signature: string }) {
+  const coach = useCoachLine(enabled, signature);
 
   return (
     <RailSection title="Coach" className="md:col-span-2 xl:col-span-1">
@@ -169,6 +181,9 @@ function CoachLine({ enabled }: { enabled: boolean }) {
             <span className="font-semibold text-track-bright">Next: </span>
             {coach.value.action}
           </p>
+          {coach.value.generatedAt && (
+            <p className="mt-2 text-[12px] text-lane-mute">Written at {format(parseISO(coach.value.generatedAt), 'HH:mm')}</p>
+          )}
         </div>
       ) : (
         <div className="flex items-start gap-3">

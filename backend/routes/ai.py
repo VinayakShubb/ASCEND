@@ -115,6 +115,9 @@ def get_coach(current_user: dict = Depends(get_current_user), today: date = Depe
                     username, habits, logs, today=today, created_at=current_user.get("created_at")
                 ))),
         daily_limit=config.AI_COACH_DAILY_LIMIT,
+        # Only spend a generation when the habits or today's check-offs
+        # actually changed, so the note keeps up without burning the limit.
+        reuse_same_input=True,
     )
 
 
