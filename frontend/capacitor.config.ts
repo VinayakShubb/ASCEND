@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
    on-device with @capacitor/local-notifications. */
 const config: CapacitorConfig = {
   appId: 'com.vinayak.ascend',
-  appName: 'ASCEND',
+  appName: 'ASCEND Beta',
   webDir: 'dist',
 };
 
