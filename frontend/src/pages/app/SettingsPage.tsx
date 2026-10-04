@@ -5,6 +5,15 @@ import { format, isValid, parseISO } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../context/AuthContext';
+import { cn } from '../../lib/cn';
+import {
+  disableReminders,
+  remindersEnabled,
+  remindersSupported,
+  requestReminderPermission,
+  setRemindersEnabled,
+  syncReminders,
+} from '../../lib/notifications';
 
 function memberSince(createdAt?: string): string | null {
   if (!createdAt) return null;
@@ -61,6 +70,8 @@ export function SettingsPage() {
         </div>
       </Section>
 
+      <RemindersSection />
+
       <Section title="Help">
         <ul className="-my-3 divide-y divide-lane-line">
           <HelpLink to="/how-it-works" title="How ASCEND scores you">
@@ -80,6 +91,86 @@ export function SettingsPage() {
         <p className="mt-3 text-[15px] text-lane">Built by Vinayak</p>
       </Section>
     </div>
+  );
+}
+
+/* Habit reminders, scheduled on-device in the native app at the time you
+   usually check each habit off. On the web it only explains itself. */
+function RemindersSection() {
+  const native = remindersSupported();
+  const [enabled, setEnabled] = useState(remindersEnabled());
+  const [busy, setBusy] = useState(false);
+  const [denied, setDenied] = useState(false);
+
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (!enabled) {
+        const ok = await requestReminderPermission();
+        if (!ok) {
+          setDenied(true);
+          return;
+        }
+        setRemindersEnabled(true);
+        setEnabled(true);
+        setDenied(false);
+        await syncReminders();
+      } else {
+        await disableReminders();
+        setEnabled(false);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section title="Reminders">
+      {native ? (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-[15px] text-lane-dim">
+              Get a nudge for each habit at the time you usually check it off — only while it's still open.
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              aria-label="Habit reminders"
+              disabled={busy}
+              onClick={toggle}
+              className={cn(
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+                enabled ? 'bg-track' : 'bg-night-700',
+                busy && 'opacity-60',
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 size-5 rounded-full bg-lane transition-transform',
+                  enabled ? 'translate-x-6' : 'translate-x-1',
+                )}
+              />
+            </button>
+          </div>
+          {denied && (
+            <p className="mt-3 text-[14px] text-dnf">
+              Notifications are blocked. Enable them for ASCEND in your phone's settings, then try again.
+            </p>
+          )}
+          {enabled && (
+            <p className="mt-3 text-[13px] text-lane-mute">
+              Times are learned from your history. A new habit needs a few days of check-offs before it gets a reminder.
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="text-[15px] text-lane-dim">
+          Habit reminders run in the ASCEND Android app — scheduled on your device at the time you usually do each habit.
+        </p>
+      )}
+    </Section>
   );
 }
 

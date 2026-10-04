@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Habit, HabitLog } from '../types';
 import { api } from '../lib/api';
+import { cancelTodayReminder } from '../lib/notifications';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -115,6 +116,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setLogs(prev =>
           prev.map(l => (l.id.startsWith('temp-') && l.habit_id === habitId && l.date === date ? realLog : l))
         );
+        // Only today can be toggled, so a completion means today's reminder is
+        // no longer needed — drop it so it can't fire after the fact.
+        void cancelTodayReminder(habitId);
       }
       // For 'uncompleted' the optimistic removal above already matches
       // server state, nothing further to reconcile.

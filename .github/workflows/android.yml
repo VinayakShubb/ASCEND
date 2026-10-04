@@ -1,0 +1,55 @@
+name: Build Android APK
+
+# Produces an installable debug APK as a downloadable artifact. Run it from the
+# Actions tab (Run workflow), or by pushing a tag like "apk-v1". Debug APKs are
+# signed with the auto-generated debug key, so they sideload without a keystore
+# (enable "install unknown apps" on the phone). Not for the Play Store.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['apk-*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build web app against the production API
+        run: npm run build
+        env:
+          VITE_API_URL: https://ascend-backend-gt9i.onrender.com
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: frontend/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ascend-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

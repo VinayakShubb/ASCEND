@@ -1,7 +1,8 @@
 import { GearSix, SignOut } from '@phosphor-icons/react';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { syncReminders } from '../lib/notifications';
 import { CipherMark } from '../components/brand/CipherMark';
 import { Skeleton } from '../components/ui/Feedback';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,17 @@ export function AppShell() {
     await logout();
     navigate('/', { replace: true });
   };
+
+  // Reschedule habit reminders whenever the app opens or returns to the
+  // foreground, so they reflect what's already done today. No-ops on web.
+  useEffect(() => {
+    void syncReminders();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void syncReminders();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   return (
     <div className="relative min-h-dvh">
