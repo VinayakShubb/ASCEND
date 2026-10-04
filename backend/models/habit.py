@@ -32,3 +32,13 @@ class HabitUpdate(BaseModel):
     difficulty: Optional[Difficulty] = None
     frequency: Optional[Frequency] = None
     archived: Optional[bool] = None
+
+
+class HabitReminder(BaseModel):
+    habit_id: str
+    name: str
+    # Learned check-off time as "HH:MM" (24h) in the user's timezone, or None
+    # when there isn't enough history yet to suggest one.
+    suggested_time: Optional[str] = None
+    samples: int
+    done_today: bool

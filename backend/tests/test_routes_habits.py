@@ -208,6 +208,52 @@ def test_toggle_double_tap_race_reports_completed(client, fake_db, monkeypatch):
     assert len(fake_db.tables["habit_logs"]) == 1
 
 
+def _seed_log(fake_db, log_id, date_str, ts):
+    fake_db.tables["habit_logs"].append(
+        {"id": log_id, "habit_id": "h1", "date": date_str, "status": "completed",
+         "user_id": "user-1", "timestamp": ts}
+    )
+
+
+def test_reminders_learn_the_checkoff_time(client, fake_db):
+    seed_habit(fake_db)
+    # Four check-offs at 14:30 UTC, which is 20:00 in Asia/Kolkata (UTC+5:30).
+    for i in range(1, 5):
+        d = (TODAY - timedelta(days=i)).isoformat()
+        _seed_log(fake_db, f"l{i}", d, f"{d}T14:30:00Z")
+
+    resp = client.get("/habits/reminders", headers={"X-Timezone": "Asia/Kolkata"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["habit_id"] == "h1"
+    assert data[0]["suggested_time"] == "20:00"
+    assert data[0]["samples"] == 4
+    assert data[0]["done_today"] is False
+
+
+def test_reminders_need_a_minimum_of_history(client, fake_db):
+    seed_habit(fake_db)
+    d = (TODAY - timedelta(days=1)).isoformat()
+    _seed_log(fake_db, "l1", d, f"{d}T14:30:00Z")
+
+    resp = client.get("/habits/reminders")
+
+    assert resp.status_code == 200
+    assert resp.json()[0]["suggested_time"] is None
+    assert resp.json()[0]["samples"] == 1
+
+
+def test_reminders_flag_done_today(client, fake_db):
+    seed_habit(fake_db)
+    _seed_log(fake_db, "lt", TODAY_STR, f"{TODAY_STR}T05:00:00Z")
+
+    resp = client.get("/habits/reminders")
+
+    assert resp.json()[0]["done_today"] is True
+
+
 def test_habit_names_have_a_length_limit(client):
     resp = client.post(
         "/habits", json={"name": "x" * 61, "category": "Health", "difficulty": "easy", "frequency": "daily"}

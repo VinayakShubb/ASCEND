@@ -1,16 +1,32 @@
-from datetime import date, timedelta
+import math
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from postgrest.exceptions import APIError
 
 import database
 from deps import get_current_user, get_user_today
-from models.habit import Habit, HabitCreate, HabitUpdate
+from models.habit import Habit, HabitCreate, HabitReminder, HabitUpdate
 from models.log import ToggleRequest, ToggleResponse
 from services.user_data import get_habits, is_valid_habit_name
 
 router = APIRouter(prefix="/habits", tags=["habits"])
+
+# How much history to learn reminder times from, and the fewest check-offs
+# before we trust a suggested time rather than returning none.
+_REMINDER_LOOKBACK_DAYS = 45
+_REMINDER_MIN_SAMPLES = 4
+
+
+def _circular_mean_minute(minutes: list[int]) -> int:
+    """Average times of day as angles so they wrap correctly at midnight
+    (23:50 and 00:10 average to midnight, not to noon)."""
+    xs = sum(math.cos(2 * math.pi * m / 1440) for m in minutes)
+    ys = sum(math.sin(2 * math.pi * m / 1440) for m in minutes)
+    angle = math.atan2(ys, xs)
+    return int(round(angle / (2 * math.pi) * 1440)) % 1440
 
 
 def _require_own_habit(habit_id: str, user_id: str) -> None:
@@ -32,6 +48,74 @@ def _require_own_habit(habit_id: str, user_id: str) -> None:
 @router.get("", response_model=list[Habit])
 def list_habits(current_user: dict = Depends(get_current_user)):
     return get_habits(current_user["id"])
+
+
+@router.get("/reminders", response_model=list[HabitReminder])
+def get_habit_reminders(
+    current_user: dict = Depends(get_current_user),
+    today: date = Depends(get_user_today),
+    x_timezone: Optional[str] = Header(default=None),
+):
+    """For each active habit: the time of day the user usually checks it off
+    (learned from recent completion timestamps, in their own timezone) and
+    whether it is already done today. The app uses this to schedule a reminder
+    at the right time for each habit that is still open."""
+    user_id = current_user["id"]
+    try:
+        tz = ZoneInfo(x_timezone) if x_timezone else timezone.utc
+    except (ZoneInfoNotFoundError, ValueError):
+        tz = timezone.utc
+
+    habits = [h for h in get_habits(user_id) if not h.get("archived")]
+    if not habits:
+        return []
+
+    since = (today - timedelta(days=_REMINDER_LOOKBACK_DAYS)).isoformat()
+    today_str = today.isoformat()
+    logs = (
+        database.db_client.table("habit_logs")
+        .select("habit_id,date,timestamp")
+        .eq("user_id", user_id)
+        .gte("date", since)
+        .execute()
+    )
+
+    minutes_by_habit: dict[str, list[int]] = {}
+    done_today: set[str] = set()
+    for log in logs.data or []:
+        habit_id = log.get("habit_id")
+        if log.get("date") == today_str:
+            done_today.add(habit_id)
+        ts = log.get("timestamp")
+        if not ts:
+            continue
+        try:
+            moment = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        local = moment.astimezone(tz)
+        minutes_by_habit.setdefault(habit_id, []).append(local.hour * 60 + local.minute)
+
+    reminders: list[HabitReminder] = []
+    for habit in habits:
+        habit_id = habit["id"]
+        minutes = minutes_by_habit.get(habit_id, [])
+        suggested = None
+        if len(minutes) >= _REMINDER_MIN_SAMPLES:
+            m = _circular_mean_minute(minutes)
+            suggested = f"{m // 60:02d}:{m % 60:02d}"
+        reminders.append(
+            HabitReminder(
+                habit_id=habit_id,
+                name=habit["name"],
+                suggested_time=suggested,
+                samples=len(minutes),
+                done_today=habit_id in done_today,
+            )
+        )
+    return reminders
 
 
 @router.post("", response_model=Optional[Habit])
@@ -124,7 +208,17 @@ def toggle_habit_completion(
     try:
         result = (
             database.db_client.table("habit_logs")
-            .insert({"habit_id": habit_id, "date": body.date, "status": "completed", "user_id": user_id})
+            .insert(
+                {
+                    "habit_id": habit_id,
+                    "date": body.date,
+                    "status": "completed",
+                    "user_id": user_id,
+                    # Captured so reminders can learn when you usually check
+                    # this habit off; see GET /habits/reminders.
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
             .execute()
         )
     except APIError as e:

@@ -41,7 +41,7 @@ class FakeQuery:
         self._rows = rows
         self._unique_keys = unique_keys or []
         self._limit: int | None = None
-        self._filters: list[tuple[str, object]] = []
+        self._filters: list[tuple[str, str, object]] = []
         self._mode = "select"
         self._payload = None
         self._order_key = None
@@ -65,7 +65,15 @@ class FakeQuery:
         return self
 
     def eq(self, key: str, value):
-        self._filters.append((key, value))
+        self._filters.append(("eq", key, value))
+        return self
+
+    def gte(self, key: str, value):
+        self._filters.append(("gte", key, value))
+        return self
+
+    def lte(self, key: str, value):
+        self._filters.append(("lte", key, value))
         return self
 
     def order(self, key: str, desc: bool = False):
@@ -78,8 +86,13 @@ class FakeQuery:
 
     def _matching(self) -> list[dict]:
         rows = self._rows
-        for key, value in self._filters:
-            rows = [r for r in rows if r.get(key) == value]
+        for op, key, value in self._filters:
+            if op == "eq":
+                rows = [r for r in rows if r.get(key) == value]
+            elif op == "gte":
+                rows = [r for r in rows if r.get(key) is not None and r.get(key) >= value]
+            elif op == "lte":
+                rows = [r for r in rows if r.get(key) is not None and r.get(key) <= value]
         return rows
 
     def execute(self) -> FakeResult:

@@ -203,6 +203,21 @@ export const statsApi = {
   ceiling: () => api.get<StatsCeiling>('/stats/ceiling'),
 };
 
+// Per active habit: the time of day you usually check it off (learned from
+// recent check-off timestamps, in your timezone) and whether it's done today.
+// Drives the mobile app's habit reminders.
+export interface HabitReminder {
+  habit_id: string;
+  name: string;
+  suggested_time: string | null; // "HH:MM" (24h), or null until there's enough history
+  samples: number;
+  done_today: boolean;
+}
+
+export const remindersApi = {
+  list: () => api.get<HabitReminder[]>('/habits/reminders'),
+};
+
 // ─── AI (replaces client-side utils/aiBrief.ts + utils/aiCoach.ts) ───
 
 export type CipherStatus = 'elite' | 'solid' | 'slipping' | 'critical';
