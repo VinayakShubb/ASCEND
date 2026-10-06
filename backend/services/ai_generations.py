@@ -44,6 +44,16 @@ def _query(build) -> list[dict]:
         return []
 
 
+def newest_today(user_id: str, feature: str, local_date: date, accept=None) -> Optional[dict]:
+    """The latest stored result for today, if there is one worth showing. Lets
+    a route hand something back straight away and refresh behind the response
+    instead of making the page wait on a model."""
+    rows = _rows_for_day(user_id, feature, local_date)
+    if accept is not None:
+        rows = [r for r in rows if accept(r.get("output") or {})]
+    return rows[0] if rows else None
+
+
 def _rows_for_day(user_id: str, feature: str, local_date: date) -> list[dict]:
     return _query(
         lambda t: t.select("*")

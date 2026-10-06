@@ -2,7 +2,7 @@ import logging
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from pydantic import ValidationError
 
 import config
@@ -96,8 +96,14 @@ def get_brief(
 
 
 @router.get("/coach", response_model=Optional[CoachOutput])
-def get_coach(current_user: dict = Depends(get_current_user), today: date = Depends(get_user_today)):
-    """The analytics sidebar's Live AI Coach: once per local day, stored."""
+def get_coach(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+    today: date = Depends(get_user_today),
+):
+    """The Today page's coach note. Once there is a note to show, it is handed
+    back immediately and any refresh happens behind the response, so checking a
+    habit off never leaves the page waiting on the model."""
     user_id = current_user["id"]
     username = derive_username(current_user["user_metadata"], current_user["email"])
     habits = get_habits(user_id)
@@ -106,19 +112,28 @@ def get_coach(current_user: dict = Depends(get_current_user), today: date = Depe
     if not any(not h["archived"] for h in habits):
         return None  # nothing to coach on; don't spend a generation
 
-    return ai_generations.get_or_generate(
-        user_id,
-        "coach",
-        today,
-        _data_fingerprint(habits, logs, today.isoformat()),
-        lambda: _with_timestamp(_validated(CoachOutput, ai_coach.get_coach_insight(
-                    username, habits, logs, today=today, created_at=current_user.get("created_at")
-                ))),
-        daily_limit=config.AI_COACH_DAILY_LIMIT,
-        # Only spend a generation when the habits or today's check-offs
-        # actually changed, so the note keeps up without burning the limit.
-        reuse_same_input=True,
-    )
+    def refresh():
+        return ai_generations.get_or_generate(
+            user_id,
+            "coach",
+            today,
+            _data_fingerprint(habits, logs, today.isoformat()),
+            lambda: _with_timestamp(_validated(CoachOutput, ai_coach.get_coach_insight(
+                        username, habits, logs, today=today, created_at=current_user.get("created_at")
+                    ))),
+            daily_limit=config.AI_COACH_DAILY_LIMIT,
+            # Only spend a generation when the habits or today's check-offs
+            # actually changed, so the note keeps up without burning the limit.
+            reuse_same_input=True,
+        )
+
+    newest = ai_generations.newest_today(user_id, "coach", today)
+    if newest is None:
+        return refresh()  # nothing to show yet, so this one has to wait
+    # There is already a note on file: hand it over now and let any refresh
+    # (which no-ops when nothing changed) run after the response.
+    background_tasks.add_task(refresh)
+    return newest["output"]
 
 
 def _is_current_cipher(output: dict) -> bool:

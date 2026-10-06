@@ -97,7 +97,13 @@ function ScoreBoard({ analysis }: { analysis: CipherAnalysis }) {
     <ResultsBoard className="p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-lane-dim">Discipline Index</span>
-        <StatusTag status={analysis.status} />
+        {analysis.isNewUser ? (
+          <span className="rounded-full border border-[#f7dfa5]/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#f7dfa5]">
+            Day {analysis.daysTracked}
+          </span>
+        ) : (
+          <StatusTag status={analysis.status} />
+        )}
       </div>
 
       <div className="mt-3 flex items-end gap-3">

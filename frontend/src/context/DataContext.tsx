@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Habit, HabitLog } from '../types';
 import { api } from '../lib/api';
+import { CACHE_HABITS, CACHE_LOGS, clearCache, readCache, writeCache } from '../lib/cache';
 import { cancelTodayReminder } from '../lib/notifications';
 import { useAuth } from './AuthContext';
 
@@ -28,10 +29,12 @@ interface ToggleResponse {
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
 
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [logs, setLogs] = useState<HabitLog[]>([]);
-  // Starts true so pages never flash "no habits" before the first fetch.
-  const [loading, setLoading] = useState(true);
+  // Start from the last known data so the lanes and numbers are on screen
+  // immediately; the fetch below replaces them a moment later.
+  const [habits, setHabits] = useState<Habit[]>(() => readCache<Habit[]>(CACHE_HABITS) ?? []);
+  const [logs, setLogs] = useState<HabitLog[]>(() => readCache<HabitLog[]>(CACHE_LOGS) ?? []);
+  // Only hold the skeleton when there is nothing cached to show yet.
+  const [loading, setLoading] = useState(() => readCache<Habit[]>(CACHE_HABITS) === null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const reload = () => setReloadKey(k => k + 1);
@@ -43,12 +46,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setHabits([]);
       setLogs([]);
       setLoading(false);
+      clearCache();
       return;
     }
 
     let stale = false;
     const fetchData = async () => {
-      setLoading(true);
       setLoadError(null);
       try {
         const [habitsData, logsData] = await Promise.all([
@@ -58,6 +61,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (stale) return;
         setHabits(habitsData);
         setLogs(logsData);
+        writeCache(CACHE_HABITS, habitsData);
+        writeCache(CACHE_LOGS, logsData);
       } catch {
         if (!stale) setLoadError('Could not load your habits. Check your connection and try again.');
       } finally {

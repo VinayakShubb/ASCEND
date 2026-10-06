@@ -35,19 +35,29 @@ export function CipherPage() {
   const hasHabits = habits.some(h => !h.archived);
   const username = user?.username;
 
-  // Show the last stored analysis immediately; running a new one is explicit.
+  // Paint the stored analysis straight away, then quietly bring it up to
+  // date. The server hands back the same one when nothing has changed, so
+  // opening this page only costs a generation when it would actually say
+  // something new.
   useEffect(() => {
     if (!username) return;
     let cancelled = false;
     aiApi
       .cipherLatest()
-      .then(result => {
+      .then(stored => {
         if (cancelled) return;
-        setAnalysis(result);
+        if (stored) setAnalysis(stored);
+        setLatest('ready');
+        return aiApi.cipher();
+      })
+      .then(fresh => {
+        if (cancelled || !fresh) return;
+        setAnalysis(fresh);
         setLatest('ready');
       })
       .catch(() => {
-        if (!cancelled) setLatest('error');
+        // A failed refresh must not throw away an analysis we already have.
+        if (!cancelled) setLatest(current => (current === 'ready' ? current : 'error'));
       });
     return () => {
       cancelled = true;

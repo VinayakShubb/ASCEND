@@ -213,7 +213,7 @@ def test_prompt_contains_only_computed_numbers_and_no_old_jargon(metrics):
 
     assert str(metrics["score"]["value"]) in prompt
     assert "Gym" in prompt and "Read" in prompt
-    assert "operator" not in prompt.split("Do not use the words")[0].lower()
+    assert "operator" not in prompt.split("Never use the words")[0].lower()
 
 
 # --- Tracking start, streak risk, weekly focus, 7-day trend ---------------
@@ -330,3 +330,28 @@ def test_weekly_focus_waits_for_a_full_week():
 
     assert compute(habits, logs, registered_days_ago=0)["focus"] is None
     assert compute(habits, logs, registered_days_ago=90)["focus"] is not None
+
+
+# --- CIPHER's voice -------------------------------------------------------
+
+def test_each_band_gets_its_own_voice():
+    """A week at the top must not read in the same register as a week falling
+    apart; the tone instruction is what makes the analysis sound like someone
+    rather than a report."""
+    habits = [habit("e", "Read", "easy")]
+
+    elite = cipher_analysis.build_prompt("Vinayak", compute(habits, logs_for("e", range(0, 10))))
+    critical = cipher_analysis.build_prompt("Vinayak", compute(habits, []))
+
+    assert "impressed" in elite and "impressed" not in critical
+    assert "turnaround" in critical and "turnaround" not in elite
+
+
+def test_the_first_days_get_a_welcoming_voice_with_no_warnings():
+    habits = [habit("e", "Read", "easy")]
+
+    new_user = cipher_analysis.build_prompt("Vinayak", compute(habits, logs_for("e", [0]), registered_days_ago=0))
+
+    assert "glad they are here" in new_user
+    # Nothing in the first days should be framed as falling behind.
+    assert "never mention slipping" in new_user

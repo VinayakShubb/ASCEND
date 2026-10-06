@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useData } from '../../../context/DataContext';
 import { aiApi, statsApi, type BriefOutput, type CoachOutput, type DayStat, type StatsCeiling, type StatsSummary } from '../../../lib/api';
 import { getBriefCache, getQuoteHistory, pushQuoteHistory, setBriefCache } from '../../../lib/aiCache';
+import { CACHE_BOARD, CACHE_WEEK, readCache, writeCache } from '../../../lib/cache';
 
 export interface BoardStats {
   summary: StatsSummary;
@@ -12,7 +13,7 @@ export interface BoardStats {
 
 /* Last board shown, so coming back to Today starts from real numbers and
    the digits flip to the fresh ones instead of blinking through a skeleton. */
-let lastBoard: BoardStats | null = null;
+let lastBoard: BoardStats | null = readCache<BoardStats>(CACHE_BOARD);
 
 /* Discipline Index, today's score and the ceiling, refetched after every
    check-off (whenever `logs` or `habits` change). Old values stay on screen
@@ -30,6 +31,7 @@ export function useBoardStats() {
         if (cancelled) return;
         lastBoard = { summary, ceiling };
         setBoard(lastBoard);
+        writeCache(CACHE_BOARD, lastBoard);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -52,7 +54,7 @@ export function useBoardStats() {
 /* Daily weighted scores for the last seven days, oldest first. */
 export function useWeekStats() {
   const { habits, logs } = useData();
-  const [days, setDays] = useState<DayStat[] | null>(null);
+  const [days, setDays] = useState<DayStat[] | null>(() => readCache<DayStat[]>(CACHE_WEEK));
   const [failed, setFailed] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -63,6 +65,7 @@ export function useWeekStats() {
       .then(result => {
         if (cancelled) return;
         setDays(result);
+        writeCache(CACHE_WEEK, result);
         setFailed(false);
       })
       .catch(() => {

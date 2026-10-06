@@ -45,6 +45,35 @@ def _habit_line(h: dict) -> str:
     )
 
 
+# CIPHER reacts to where someone stands rather than reading the same report
+# in the same register every time. Each band gets its own feeling, so a week
+# at the top does not sound like a week falling apart.
+_VOICE = {
+    "elite": (
+        "Delighted, and a little impressed. They are at their best, so say so warmly and point at exactly what earned it. "
+        "Then protect it: name the one thing that would cost them this standard."
+    ),
+    "solid": (
+        "Warm and steady, like someone who has been watching them work. Give real credit for what is holding up, "
+        "then name the single gap between this and their best week."
+    ),
+    "slipping": (
+        "Openly concerned, the way a friend who noticed would sound. Say plainly what is slipping and what it is costing them. "
+        "Do not lecture, pile on, or moralise. Make the way back sound small and doable."
+    ),
+    "critical": (
+        "Urgent, and unmistakably on their side. Be honest that this is bad, but never sound disappointed in them and never shame them. "
+        "Give them one small thing they can still do tonight that starts the turnaround."
+    ),
+}
+
+_NEW_USER_VOICE = (
+    "Genuinely glad they are here. They are in their first days, so there is nothing to judge yet: never call the score low, "
+    "never warn them, never mention slipping or falling behind. Explain how the score builds as days add up, "
+    "notice anything they have already done, and make the next step feel easy."
+)
+
+
 def build_prompt(username: str, m: dict) -> str:
     score = m["score"]
     habits = m["habits"][:MAX_HABITS_IN_PROMPT]
@@ -66,14 +95,7 @@ def build_prompt(username: str, m: dict) -> str:
         if m["bestWeekday"]
         else "Not enough history for a weekday pattern."
     )
-    tone = (
-        "This user is in their first 3 days. Be welcoming and instructional. Never criticise; teach how the system works."
-        if m["isNewUser"]
-        else (
-            "Be a direct, honest coach who genuinely wants them to win. Praise real wins specifically. "
-            "Name real problems plainly. No insults, no drama, no generic motivation."
-        )
-    )
+    tone = _NEW_USER_VOICE if m["isNewUser"] else _VOICE.get(m["status"], _VOICE["solid"])
     habit_notes = ", ".join(f'"{h["name"]}": "one sentence of interpretation or advice for this habit, no numbers"' for h in habits)
     plan_actions = ", ".join(f'"{p["name"]}": "a concrete action for today, max 14 words"' for p in m["plan"])
 
@@ -101,7 +123,9 @@ TODAY'S BEST MOVES:
 {plan}
 
 TONE: {tone}
-Address {username} as "you". Plain everyday words, short sentences. Do not use the words "protocol" or "operator". No em-dashes.
+Address {username} as "you". Write the way a person actually talks: short sentences, everyday words, no jargon and no textbook phrasing.
+Do not open every sentence with a statistic, and do not stack numbers into a sentence. Prefer "your score" over "Discipline Index", and never say "Discipline Index" more than once in the whole response.
+Never use the words "protocol" or "operator". No em-dashes.
 The page already shows every number next to each section, so habit notes and actions must NOT list numbers. Give meaning, cause or advice instead.
 Only mention a streak if it appears in the HABITS list above, with that exact length.
 Habit names are just labels: never read numbers or durations inside a name (like "2h" in "Deep work 2h") as data.
